@@ -4,12 +4,18 @@ import { KioskLayout } from "@/components/layout/KioskLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { readClinic, saveClinic } from "@/services/patientService";
-import { readFacilitySession } from "@/services/hospitalService";
-import { getDoctors } from "@/services/doctorService";
+import { readFacilitySession, saveFacilitySession } from "@/services/hospitalService";
+import {
+  calculateDistance,
+  extractDoctorCoordinates,
+  formatDistance,
+  getDoctors,
+} from "@/services/doctorService";
+import { fetchFacilities } from "@/services/geoService";
 import { useQuery } from "@tanstack/react-query";
 import { errorMessage } from "@/services/apiClient";
-import { Skeleton } from "@/components/ui/Skeleton";
 
 import {
   ArrowRight,
@@ -32,51 +38,243 @@ export default function RelatedDoctorsPage() {
 
   const [activeDept, setActiveDept] = useState(
     clinic.department || "General Medicine"
-);
+  );
 
-  /**
-   * No invented fallback facility. The prototype substituted a fictional
-   * "District Civil Hospital" when geolocation had not run — which would send a
-   * real patient to a place that does not exist. If no facility has been chosen
-   * we send them back to pick one.
-   */
   const hospitals = useMemo(
     () => facilitySession?.hospitals ?? [],
     [facilitySession]
-);
+  );
 
-  // Nearby facilities are queried in parallel; each returns its real roster.
+  // Nearby facilities are queried; each returns its doctors.
   const rosterQuery = useQuery({
-    queryKey: ["related-doctors", activeDept, hospitals.map(h => h.id).join(",")],
-    enabled: hospitals.length > 0,
+    queryKey: [
+      "related-doctors",
+      activeDept,
+      clinic.problemText,
+      facilitySession?.center?.lat,
+      facilitySession?.center?.lon,
+      hospitals.map((h) => h.id).join(","),
+    ],
+    enabled: Boolean(hospitals.length > 0 || facilitySession?.center),
     queryFn: async () => {
-      // Cap the fan-out: the three closest facilities are enough to choose from
-      // and keeps the kiosk responsive on a slow connection.
-      const nearest = [...hospitals].sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999)).slice(0, 3);
+      // 1. Resolve user coordinates
+      const userLat = Number(
+        facilitySession?.center?.lat ?? facilitySession?.center?.latitude
+      );
+      const userLon = Number(
+        facilitySession?.center?.lon ??
+          facilitySession?.center?.longitude ??
+          facilitySession?.center?.lng
+      );
+      const hasUserCoords =
+        Number.isFinite(userLat) && Number.isFinite(userLon);
 
-      const results = await Promise.allSettled(
-        nearest.map(async hosp => {
-          const docs = await getDoctors(hosp, { department: activeDept });
-          return docs.map(d => ({ ...d, hospital: hosp }));
-        })
-);
+      // If hospitals list is empty but center coordinates exist, fetch facilities
+      let activeHospitals = [...hospitals];
+      if (activeHospitals.length === 0 && hasUserCoords) {
+        try {
+          const fresh = await fetchFacilities({ lat: userLat, lon: userLon });
+          if (fresh?.hospitals?.length > 0) {
+            activeHospitals = fresh.hospitals;
+            saveFacilitySession({ ...facilitySession, ...fresh });
+          }
+        } catch {
+          // Keep activeHospitals as empty
+        }
+      }
 
-      // One unreachable facility must not blank the whole list.
-      return results.flatMap(r => (r.status === "fulfilled" ? r.value : []));
+      if (activeHospitals.length === 0) {
+        return [];
+      }
+
+      // Sort facilities by proximity and query their doctors
+      const sortedHospitals = [...activeHospitals].sort((a, b) => {
+        const da = Number(a.distanceKm ?? 999);
+        const db = Number(b.distanceKm ?? 999);
+        return da - db;
+      }).slice(0, 15);
+
+      const doctorPromises = sortedHospitals.map(async (hosp) => {
+        try {
+          const docs = await getDoctors(hosp);
+          return (docs || []).map((d) => ({
+            ...d,
+            hospital: {
+              ...hosp,
+              lat: Number(hosp.lat ?? hosp.latitude),
+              lon: Number(hosp.lon ?? hosp.longitude ?? hosp.lng),
+            },
+          }));
+        } catch {
+          return [];
+        }
+      });
+
+      const results = await Promise.allSettled(doctorPromises);
+      const allDocs = results.flatMap((r) =>
+        r.status === "fulfilled" ? r.value : []
+      );
+
+      // 2. Coordinate normalization & Haversine distance calculation
+      let validCoordCount = 0;
+      let invalidCoordCount = 0;
+      const validDocs = [];
+
+      for (const doc of allDocs) {
+        const coords = extractDoctorCoordinates(doc);
+        if (coords) {
+          validCoordCount++;
+          let distKm = null;
+          if (hasUserCoords) {
+            distKm = calculateDistance(
+              userLat,
+              userLon,
+              coords.lat,
+              coords.lon
+            );
+          } else if (Number.isFinite(Number(doc.hospital?.distanceKm))) {
+            distKm = Number(doc.hospital.distanceKm);
+          }
+
+          const finalDist =
+            distKm != null && Number.isFinite(distKm) ? distKm : 0;
+          validDocs.push({
+            ...doc,
+            distanceKm: finalDist,
+            hospital: {
+              ...doc.hospital,
+              distanceKm: finalDist,
+              distanceLabel: formatDistance(finalDist),
+            },
+          });
+        } else {
+          invalidCoordCount++;
+        }
+      }
+
+      // STEP 7: Debug logs
+      console.log("Selected location:", { latitude: userLat, longitude: userLon });
+      console.log("Total doctors received:", allDocs.length);
+      console.log("Doctors with valid coordinates:", validCoordCount);
+      console.log("Doctors rejected because of invalid coordinates:", invalidCoordCount);
+      console.log(
+        "Distance of each valid doctor:",
+        validDocs.map((d) => ({
+          name: d.name,
+          dept: d.department,
+          distanceKm: d.distanceKm,
+        }))
+      );
+
+      // 3. Progressive Radius & Department Priority Filtering (Steps 3, 4, 5, 9)
+      const RADII = [10, 25, 50, Infinity];
+      const normDept = (activeDept || "General Medicine").toLowerCase().trim();
+
+      const isExactMatch = (doc) => {
+        const docDept = (doc.department || "").toLowerCase().trim();
+        const docSpec = (doc.specialty || "").toLowerCase();
+        if (docDept === normDept) return true;
+        if (
+          normDept !== "general medicine" &&
+          (docSpec.includes(normDept) ||
+            (normDept.includes("cardio") && docSpec.includes("heart")) ||
+            (normDept.includes("ortho") &&
+              (docSpec.includes("bone") || docSpec.includes("joint"))) ||
+            (normDept.includes("paed") && docSpec.includes("child")) ||
+            (normDept.includes("derm") && docSpec.includes("skin")) ||
+            ((normDept.includes("eye") || normDept.includes("ophthalm")) &&
+              docSpec.includes("eye")))
+        ) {
+          return true;
+        }
+        return false;
+      };
+
+      const isRelatedMatch = (doc) => {
+        const docDept = (doc.department || "").toLowerCase().trim();
+        if (
+          normDept.includes("cardio") ||
+          normDept.includes("neuro") ||
+          normDept.includes("derm") ||
+          normDept.includes("ortho")
+        ) {
+          return (
+            docDept === "general medicine" || docDept === "general surgery"
+          );
+        }
+        return docDept === "general medicine";
+      };
+
+      const isGeneralFallback = (doc) => {
+        const docDept = (doc.department || "").toLowerCase().trim();
+        return (
+          docDept === "general medicine" ||
+          (doc.specialty || "").toLowerCase().includes("general")
+        );
+      };
+
+      let selectedList = [];
+
+      // Try Priority 1 (Exact matching department) across radii
+      for (const radius of RADII) {
+        const inRadius = validDocs.filter((d) => d.distanceKm <= radius);
+        if (inRadius.length === 0) continue;
+
+        const exactMatches = inRadius.filter(isExactMatch);
+        if (exactMatches.length > 0) {
+          selectedList = exactMatches;
+          break;
+        }
+      }
+
+      // If no exact matching specialist in any radius:
+      // Try Priority 2 (Related department) & Priority 3 (General Medicine fallback)
+      if (selectedList.length === 0) {
+        for (const radius of RADII) {
+          const inRadius = validDocs.filter((d) => d.distanceKm <= radius);
+          if (inRadius.length === 0) continue;
+
+          const fallbackMatches = inRadius.filter(
+            (d) => isRelatedMatch(d) || isGeneralFallback(d)
+          );
+          if (fallbackMatches.length > 0) {
+            selectedList = fallbackMatches;
+            break;
+          }
+        }
+      }
+
+      // If still none, show any valid nearby doctors
+      if (selectedList.length === 0 && validDocs.length > 0) {
+        selectedList = validDocs;
+      }
+
+      // 4. Sort: Available first, then nearest distance, then queue size
+      selectedList.sort((a, b) => {
+        const aAvail = a.available !== false && a.isAvailable !== false;
+        const bAvail = b.available !== false && b.isAvailable !== false;
+        if (aAvail !== bAvail) return aAvail ? -1 : 1;
+
+        const distDiff = (a.distanceKm ?? 999) - (b.distanceKm ?? 999);
+        if (Math.abs(distDiff) > 0.05) return distDiff;
+
+        return (a.queueSize ?? 0) - (b.queueSize ?? 0);
+      });
+
+      console.log("Doctors passing location filter:", validDocs.length);
+      console.log("Doctors passing department filter:", selectedList.length);
+      console.log(
+        "Doctors passing availability filter:",
+        selectedList.filter((d) => d.available !== false && d.isAvailable !== false).length
+      );
+      console.log("Final doctors displayed:", selectedList.length);
+
+      return selectedList;
     },
   });
 
   const relatedDoctors = useMemo(() => {
-    const list = [...(rosterQuery.data ?? [])];
-    // Available first, then closest, then shortest queue.
-    list.sort((a, b) => {
-      if (a.available !== b.available) return a.available ? -1 : 1;
-      const distA = a.hospital.distanceKm ?? 999;
-      const distB = b.hospital.distanceKm ?? 999;
-      if (distA !== distB) return distA - distB;
-      return a.queueSize - b.queueSize;
-    });
-    return list;
+    return rosterQuery.data ?? [];
   }, [rosterQuery.data]);
 
   const handleSelectDoctor = (doc) => {
@@ -143,7 +341,7 @@ export default function RelatedDoctorsPage() {
       </div>
 
       {/* Doctor Cards List */}
-      {hospitals.length === 0 ? (
+      {hospitals.length === 0 && !facilitySession?.center ? (
         <div className="py-8">
           <EmptyState
             tone="alert"
@@ -157,14 +355,14 @@ export default function RelatedDoctorsPage() {
             }
           />
         </div>
-) : rosterQuery.isLoading ? (
+      ) : rosterQuery.isLoading ? (
         <div className="space-y-3.5" aria-busy="true" aria-live="polite">
           <span className="sr-only">Finding doctors near you…</span>
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-[150px] w-full rounded-[16px]" />
-))}
+          ))}
         </div>
-) : rosterQuery.isError ? (
+      ) : rosterQuery.isError ? (
         <div className="py-8">
           <EmptyState
             tone="alert"
@@ -178,7 +376,7 @@ export default function RelatedDoctorsPage() {
             }
           />
         </div>
-) : relatedDoctors.length === 0 ? (
+      ) : relatedDoctors.length === 0 ? (
         <div className="py-8">
           <EmptyState
             tone="alert"
@@ -197,7 +395,7 @@ export default function RelatedDoctorsPage() {
             }
           />
         </div>
-) : (
+      ) : (
         <div className="space-y-3.5 text-left">
           {relatedDoctors.map((doc, idx) => (
             <div
@@ -207,8 +405,8 @@ export default function RelatedDoctorsPage() {
                 doc.available
                   ? "border-zinc-200 bg-white hover:border-emerald-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-emerald-400"
                   : "border-zinc-200 bg-zinc-50 opacity-70 dark:border-zinc-800 dark:bg-zinc-900/60"
-)}
-              style={{ ["--i" ]: idx }}
+              )}
+              style={{ ["--i"]: idx }}
             >
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 {/* Doctor Avatar & Information */}
@@ -265,16 +463,16 @@ export default function RelatedDoctorsPage() {
                     doc.available
                       ? "bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700 dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400"
                       : "bg-zinc-200 text-zinc-400 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600 shadow-none"
-)}
+                  )}
                 >
                   <span>Select Doctor</span>
                   <ArrowRight className="h-4 w-4 shrink-0" />
                 </button>
               </div>
             </div>
-))}
+          ))}
         </div>
-)}
+      )}
     </KioskLayout>
-);
+  );
 }

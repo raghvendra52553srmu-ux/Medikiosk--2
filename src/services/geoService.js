@@ -21,9 +21,9 @@ const CACHE_KEY = "medikiosk.geo.v3";
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const BASE_RADIUS_M = 15000;
 const WIDE_RADIUS_M = 20000;
-const OVERPASS_TIMEOUT_MS = 20_000;
-const GEOCODE_TIMEOUT_MS = 12_000;
-const REVERSE_TIMEOUT_MS = 9_000;
+const OVERPASS_TIMEOUT_MS = 8_000;
+const GEOCODE_TIMEOUT_MS = 10_000;
+const REVERSE_TIMEOUT_MS = 8_000;
 
 
 
@@ -279,25 +279,15 @@ async function runOverpass(query, signal) {
  * blocked on institutional Wi-Fi; Nominatim answers from the same host that the
  * area search already reached, so if the search box works, hospitals work too.
  */
-async function facilitiesViaNominatim(center) {
-  const d = 0.18; // ~20 km box — matches WIDE_RADIUS_M so the Nominatim fallback covers the same ground
+async function facilitiesViaNominatim(center, radius = 25000) {
+  const d = Math.max(0.12, (radius / 1000) * 0.012); // scale box with search radius
   const viewbox = `${center.lon - d},${center.lat + d},${center.lon + d},${center.lat - d}`;
   const url =
     `${NOMINATIM}/search?format=jsonv2&addressdetails=1&extratags=1&limit=45&dedupe=1` +
     `&bounded=1&viewbox=${viewbox}&q=${encodeURIComponent("hospital OR clinic OR health centre")}`;
   const res = await fetchWithTimeout(url, { headers: { Accept: "application/json" } }, GEOCODE_TIMEOUT_MS);
   if (!res.ok) throw new Error(`Nominatim responded ${res.status}`);
-  const rows = (await res.json())
-
-
-
-
-
-
-
-
-
-;
+  const rows = (await res.json());
 
   const typeMap = { node: "node", way: "way", relation: "relation" };
   return rows
@@ -333,7 +323,7 @@ async function queryFacilities(coords, radius, signal) {
   }
   // Overpass empty, down, or blocked — try the geocoder host instead.
   try {
-    return await facilitiesViaNominatim(coords);
+    return await facilitiesViaNominatim(coords, radius);
   } catch {
     if (signal?.aborted) throw Object.assign(new Error("aborted"), { name: "AbortError" });
     throw new Error(
@@ -524,25 +514,58 @@ export async function fetchFacilities(
   coords,
   signal
 ) {
-  const cached = readCache(coords);
+  const normCoords = {
+    lat: Number(coords?.lat ?? coords?.latitude),
+    lon: Number(coords?.lon ?? coords?.longitude ?? coords?.lng),
+  };
+
+  if (!Number.isFinite(normCoords.lat) || !Number.isFinite(normCoords.lon)) {
+    throw new Error("Invalid coordinates provided.");
+  }
+
+  const cached = readCache(normCoords);
   if (cached) return cached;
 
   // Address and facility query run independently: a Nominatim failure must not
   // cost the patient their hospital list.
-  const placePromise = reverseGeocode(coords);
+  const placePromise = reverseGeocode(normCoords);
 
-  let radius = BASE_RADIUS_M;
+  // Progressive radius search: 10 km -> 25 km -> 50 km
+  let radius = 10000;
   let widened = false;
-  let elements = await queryFacilities(coords, radius, signal);
-  if (elements.length < 3) {
-    radius = WIDE_RADIUS_M;
+  let elements = [];
+
+  try {
+    elements = await queryFacilities(normCoords, radius, signal);
+  } catch (e) {
+    if (signal?.aborted) throw e;
+  }
+
+  if (elements.length < 2) {
+    radius = 25000;
     widened = true;
-    elements = await queryFacilities(coords, radius, signal);
+    try {
+      const more = await queryFacilities(normCoords, radius, signal);
+      if (more.length > elements.length) elements = more;
+    } catch (e) {
+      if (signal?.aborted) throw e;
+    }
+  }
+
+  if (elements.length < 2) {
+    radius = 50000;
+    widened = true;
+    try {
+      const more = await queryFacilities(normCoords, radius, signal);
+      if (more.length > elements.length) elements = more;
+    } catch (e) {
+      if (signal?.aborted) throw e;
+    }
   }
 
   const seen = new Set();
   const hospitals = elements
-    .map(el => toHospital(el, coords))
+    .map(el => toHospital(el, normCoords))
     .filter((h) => {
       if (!h) return false;
       const key = `${h.name.toLowerCase()}|${Math.round(h.lat * 1000)}|${Math.round(h.lon * 1000)}`;
@@ -557,21 +580,15 @@ export async function fetchFacilities(
 
   const result = {
     hospitals,
-    center: coords,
+    center: normCoords,
     place,
     radiusUsed: radius,
     fetchedAt: Date.now(),
     widened,
   };
-  writeCache(coords, result);
+  writeCache(normCoords, result);
   return result;
 }
-
-
-
-
-
-
 
 export function requestDeviceLocation(signal) {
   return new Promise(resolve => {
@@ -579,12 +596,6 @@ export function requestDeviceLocation(signal) {
       resolve({ state: "unsupported" });
       return;
     }
-    // Browsers refuse geolocation outright on a non-secure origin (plain http://
-    // that isn't localhost) — the permission prompt never even appears, and
-    // getCurrentPosition fails instantly with PERMISSION_DENIED. That looks
-    // identical to the patient tapping "Block", so it has to be caught here
-    // and reported as its own state, or the kiosk build silently "just doesn't
-    // fetch" the moment it's opened over a LAN IP or a plain http tunnel.
     if (!window.isSecureContext) {
       resolve({
         state: "insecure",
@@ -605,21 +616,41 @@ export function requestDeviceLocation(signal) {
     const onAbort = () => finish({ state: "unavailable", message: "Location request was cancelled." });
     signal?.addEventListener("abort", onAbort);
 
+    // Try high accuracy first; if unavailable/timeout, try low accuracy before giving up
     navigator.geolocation.getCurrentPosition(
       pos =>
         finish({
           state: "granted",
-          coords: { lat: pos.coords.latitude, lon: pos.coords.longitude },
+          coords: { lat: Number(pos.coords.latitude), lon: Number(pos.coords.longitude) },
           accuracy: Math.round(pos.coords.accuracy ?? 0),
         }),
       err => {
-        if (err.code === err.PERMISSION_DENIED) finish({ state: "denied" });
-        else if (err.code === err.POSITION_UNAVAILABLE)
-          finish({ state: "unavailable", message: "No GPS fix available. Move near a window or enter your area." });
-        else finish({ state: "unavailable", message: "Timed out while reading your position." });
+        if (err.code === err.PERMISSION_DENIED) {
+          finish({ state: "denied" });
+        } else {
+          // Retry with low accuracy (faster and works on Wi-Fi without GPS hardware)
+          navigator.geolocation.getCurrentPosition(
+            pos2 =>
+              finish({
+                state: "granted",
+                coords: { lat: Number(pos2.coords.latitude), lon: Number(pos2.coords.longitude) },
+                accuracy: Math.round(pos2.coords.accuracy ?? 0),
+              }),
+            err2 => {
+              if (err2.code === err2.PERMISSION_DENIED) {
+                finish({ state: "denied" });
+              } else if (err2.code === err2.POSITION_UNAVAILABLE) {
+                finish({ state: "unavailable", message: "No GPS fix available. Move near a window or enter your area." });
+              } else {
+                finish({ state: "unavailable", message: "Timed out while reading your position." });
+              }
+            },
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 }
+          );
+        }
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
-);
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
   });
 }
 

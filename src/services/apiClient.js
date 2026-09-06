@@ -9,7 +9,7 @@
  *   - a request timeout, because a kiosk on rural 3G must not hang forever
  */
 
-const BASE = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, "");
+const BASE = (import.meta?.env?.VITE_API_URL ?? "/api").replace(/\/$/, "");
 const DEFAULT_TIMEOUT_MS = 20_000;
 
 export class ApiError extends Error {
