@@ -1,0 +1,379 @@
+// MediKiosk — data model
+// Design notes:
+//  * Every table below is read or written by an endpoint the frontend actually calls.
+//  * Patient identity is minimised: the mobile number is stored hashed + last4 only.
+//  * Token uniqueness is enforced by the DB, not by app code, so two kiosks can never
+//    hand out the same number for the same doctor on the same day.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum StaffRole {
+  DOCTOR
+  ADMIN
+}
+
+enum SessionStatus {
+  REGISTERED // patient identified at the kiosk
+  TOKEN_ISSUED // has a queue token
+  HISTORY // answering the interview
+  SUBMITTED // sent to the doctor
+  CLOSED // consultation finished
+}
+
+enum TokenStatus {
+  WAITING
+  ALMOST
+  CALLED
+  IN_CONSULTATION
+  COMPLETED
+  ABSENT
+}
+
+enum DocumentType {
+  PRESCRIPTION
+  LAB_REPORT
+  DISCHARGE_SUMMARY
+  IMAGING
+  OTHER
+}
+
+enum DocumentStatus {
+  PROCESSING
+  COMPLETED
+  ERROR
+}
+
+enum SummaryStatus {
+  DRAFT
+  REVIEWED
+  VERIFIED
+}
+
+enum Severity {
+  LOW
+  MODERATE
+  HIGH
+}
+
+enum ActorType {
+  PATIENT
+  STAFF
+  SYSTEM
+}
+
+enum KioskStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+}
+
+/// Clinical + operations staff. Never self-registered — seeded or created by an admin.
+model StaffUser {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String
+  role         StaffRole
+  name         String
+  department   String?
+  qualification String?
+  isActive     Boolean   @default(true)
+
+  /// When this staff user IS a doctor, the clinical row they act as.
+  doctorId String? @unique
+  doctor   Doctor? @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+
+  auditLogs        AuditLog[]
+  verifiedSummaries ClinicalSummary[] @relation("VerifiedBy")
+
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([role, isActive])
+}
+
+/// A facility. Upserted from the OpenStreetMap payload the kiosk already fetches,
+/// so the DB mirrors real places instead of inventing them. Deduped on the OSM ref.
+model Hospital {
+  id           String   @id @default(cuid())
+  osmType      String
+  osmId        BigInt
+  name         String
+  /// max(400) at the API boundary — over MySQL's default VARCHAR(191) cap.
+  address      String? @db.Text
+  lat          Float
+  lon          Float
+  phone        String?
+  /// max(300) at the API boundary — over MySQL's default VARCHAR(191) cap.
+  website      String? @db.Text
+  emergency    Boolean  @default(false)
+  /// MySQL has no native array column — validated as a string array at the
+  /// API boundary (schemas.js) and stored as a JSON array here instead.
+  specialities Json     @default("[]")
+
+  departments Department[]
+  doctors     Doctor[]
+  tokens      QueueToken[]
+  kiosks      KioskDevice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([osmType, osmId])
+  @@index([name])
+}
+
+model Department {
+  id         String   @id @default(cuid())
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  name       String
+  slug       String
+
+  doctors Doctor[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([hospitalId, name])
+  @@index([hospitalId])
+}
+
+model Doctor {
+  id            String     @id @default(cuid())
+  hospitalId    String
+  hospital      Hospital   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  departmentId  String
+  department    Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  name          String
+  qualification String
+  specialty     String
+  room          String?
+  /// OPD window as minutes from midnight — lets the server compute "open now" and ETAs.
+  opdStartMin   Int        @default(510) // 8:30 AM
+  opdEndMin     Int        @default(810) // 1:30 PM
+  slotMinutes   Int        @default(5)
+  /// Token prefix, e.g. "A" -> A-101. Unique per doctor keeps boards readable.
+  tokenPrefix   String     @default("A")
+  isAvailable   Boolean    @default(true)
+
+  tokens QueueToken[]
+  staff  StaffUser?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hospitalId, departmentId])
+  @@index([departmentId, isAvailable])
+}
+
+/// One walk-up at a kiosk. Holds everything the patient entered in that visit.
+/// PHI minimisation: no raw mobile number is persisted.
+model PatientSession {
+  id String @id @default(cuid())
+
+  kioskId String?
+  kiosk   KioskDevice? @relation(fields: [kioskId], references: [id], onDelete: SetNull)
+
+  name        String
+  age         Int
+  sex         String // "M" | "F" | "O"
+  /// SHA-256 of the 10-digit number — lets us spot repeat visits without storing it.
+  mobileHash  String
+  mobileLast4 String
+  language    String  @default("en")
+
+  consentAt      DateTime?
+  /// max(2000) at the API boundary — over MySQL's default VARCHAR(191) cap.
+  problemText    String? @db.Text
+  problemPresetId String?
+
+  status    SessionStatus @default(REGISTERED)
+  expiresAt DateTime
+  deletedAt DateTime?
+
+  token     QueueToken?
+  answers   HistoryAnswer[]
+  documents Document[]
+  summary   ClinicalSummary?
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([mobileHash])
+  @@index([status, createdAt])
+  @@index([deletedAt])
+}
+
+/// The queue. `@@unique([doctorId, serviceDate, number])` is the invariant that makes
+/// this a real queue rather than a per-device fiction.
+model QueueToken {
+  id     String @id @default(cuid())
+  number String
+
+  sessionId String         @unique
+  session   PatientSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Restrict)
+
+  /// Date-only bucket so the number sequence resets each morning.
+  serviceDate DateTime @db.Date
+  /// Monotonic position within (doctor, serviceDate) — drives ordering and ETA.
+  sequence    Int
+
+  status      TokenStatus @default(WAITING)
+  issuedAt    DateTime    @default(now())
+  etaAt       DateTime?
+  calledAt    DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([doctorId, serviceDate, number])
+  @@unique([doctorId, serviceDate, sequence])
+  @@index([doctorId, serviceDate, status])
+  @@index([serviceDate, status])
+}
+
+/// One row per answered question. Upserted, so a patient can resume the interview.
+model HistoryAnswer {
+  id String @id @default(cuid())
+
+  sessionId String
+  session   PatientSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  questionId String
+  /// string for text/single-choice, string[] for multi-choice.
+  value      Json
+  answeredAt DateTime @default(now())
+
+  @@unique([sessionId, questionId])
+  @@index([sessionId])
+}
+
+/// OCR happens in the browser (Tesseract) — the image never has to leave the device.
+/// Only the extracted text and an optional small thumbnail are persisted.
+model Document {
+  id String @id @default(cuid())
+
+  sessionId String
+  session   PatientSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  name          String
+  type          DocumentType   @default(OTHER)
+  /// max(20_000) at the API boundary — utf8mb4 worst case exceeds a plain
+  /// TEXT column's 65,535-byte cap, so this needs the wider MEDIUMTEXT.
+  extractedText String?        @db.MediumText
+  ocrConfidence Float?
+  /// max(400_000) at the API boundary (a base64 image) — needs LONGTEXT.
+  thumbDataUrl  String?        @db.LongText
+  status        DocumentStatus @default(COMPLETED)
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+}
+
+/// Server-compiled narrative. Versioned + verifiable so a signed chart is durable.
+model ClinicalSummary {
+  id String @id @default(cuid())
+
+  sessionId String         @unique
+  session   PatientSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  /// Every field below carries an API-boundary max() well over MySQL's
+  /// default VARCHAR(191) cap (see schemas.js), so each needs @db.Text.
+  chiefComplaint          String @db.Text
+  historyOfPresentIllness String @db.Text
+  pastMedicalHistory      String @db.Text
+  /// MySQL has no native array column — stored as JSON arrays instead.
+  medications             Json   @default("[]")
+  allergies               Json   @default("[]")
+  familyHistory           String @db.Text
+  socialHistory           String @db.Text
+  reviewOfSystems         String @db.Text
+
+  status       SummaryStatus @default(DRAFT)
+  version      Int           @default(1)
+  compiledAt   DateTime      @default(now())
+  verifiedById String?
+  verifiedBy   StaffUser?    @relation("VerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAt   DateTime?
+
+  redFlags RedFlag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+/// Deterministic rule hits (e.g. chest pain over 45). Never an LLM guess.
+model RedFlag {
+  id String @id @default(cuid())
+
+  summaryId String
+  summary   ClinicalSummary @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+
+  finding  String
+  reason   String
+  severity Severity @default(MODERATE)
+  source   String   @default("system-compiled")
+
+  createdAt DateTime @default(now())
+
+  @@index([summaryId])
+}
+
+/// Append-only. Backs the audit trail the doctor UI already renders.
+model AuditLog {
+  id String @id @default(cuid())
+
+  actorType ActorType
+  staffId   String?
+  staff     StaffUser? @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  sessionId String?
+  session   PatientSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  action   String
+  entity   String
+  entityId String?
+  meta     Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@index([sessionId])
+}
+
+/// Physical kiosk terminals — powers the admin dashboard's fleet panel with real data.
+model KioskDevice {
+  id         String      @id @default(cuid())
+  name       String      @unique
+  hospitalId String?
+  hospital   Hospital?   @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
+  status     KioskStatus @default(ONLINE)
+  lastSeenAt DateTime    @default(now())
+
+  sessions PatientSession[]
+
+  createdAt DateTime @default(now())
+
+  @@index([status])
+}

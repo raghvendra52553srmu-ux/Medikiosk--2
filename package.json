@@ -1,0 +1,30 @@
+{
+  "name": "react-vite-tailwind",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:kiosk": "vite build --mode kiosk"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
+    "clsx": "2.1.1",
+    "lucide-react": "^1.37.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "react-router-dom": "^7.18.3",
+    "socket.io-client": "^4.8.3",
+    "tailwind-merge": "3.4.0",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.17",
+    "@vitejs/plugin-react": "5.1.1",
+    "tailwindcss": "4.1.17",
+    "vite": "^7.3.6",
+    "vite-plugin-singlefile": "2.3.0"
+  }
+}
