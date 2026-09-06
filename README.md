@@ -224,4 +224,5 @@ All responses share one envelope:
 - The recall-at-the-desk button notifies the UI only; wiring it to hall hardware is
   deployment-specific.
 #   B a c k e n d - m e d i k i o s k  
+ #   B a c k e n d - m e d i k i o s k  
  
