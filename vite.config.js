@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, "");
-  const apiTarget = env.VITE_API_PROXY ?? "http://localhost:4000";
+  const apiTarget = env.VITE_API_PROXY ?? "http://127.0.0.1:4000";
 
   // The kiosk build inlines everything into one HTML file for offline terminals;
   // the hosted build stays a normal SPA so it can be served from a CDN.

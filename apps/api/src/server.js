@@ -16,7 +16,7 @@ async function start() {
     process.exit(1);
   }
 
-  httpServer.listen(env.PORT, "0.0.0.0", () => {
+  httpServer.listen(env.PORT, () => {
     console.log(`[medikiosk-api] listening on :${env.PORT}  (${env.NODE_ENV})`);
     console.log(`[medikiosk-api] CORS origins: ${env.corsOrigins.join(", ")}`);
   });
