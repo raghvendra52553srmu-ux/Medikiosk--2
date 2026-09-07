@@ -17,8 +17,8 @@ const PREFIXES = "ABCDEFGHJKLMNPQRSTUVWXYZ".split("");
  * rendered in the UI, unlike the prototype which shipped them in the bundle.
  */
 async function main() {
-  const doctorPassword = process.env.SEED_DOCTOR_PASSWORD || `Doc-${randomBytes(6).toString("base64url")}`;
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD || `Adm-${randomBytes(6).toString("base64url")}`;
+  const doctorPassword = (process.env.SEED_DOCTOR_PASSWORD || "Doctor@123").trim();
+  const adminPassword = (process.env.SEED_ADMIN_PASSWORD || "Admin@123").trim();
 
   // A demo facility so the doctor/admin views have data before any patient walks up.
   const hospital = await prisma.hospital.upsert({

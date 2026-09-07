@@ -9,17 +9,46 @@
  *   - a request timeout, because a kiosk on rural 3G must not hang forever
  */
 
-const BASE = (import.meta?.env?.VITE_API_URL ?? "/api").replace(/\/$/, "");
+export function getBaseUrl() {
+  const custom =
+    typeof window !== "undefined"
+      ? (window.__MEDIKIOSK_API_URL__ || localStorage.getItem("medikiosk.api_url") || "")
+      : "";
+  const envUrl = (custom || import.meta?.env?.VITE_API_URL || "").trim();
+  if (!envUrl || envUrl === "/api") return "/api";
+  const cleaned = envUrl.replace(/\/+$/, "");
+  return cleaned.endsWith("/api") ? cleaned : `${cleaned}/api`;
+}
+
 const DEFAULT_TIMEOUT_MS = 20_000;
+const TOKEN_KEY = "medikiosk_auth_token";
+
+export function getAuthToken() {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAuthToken(token) {
+  try {
+    if (token) {
+      sessionStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      sessionStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  } catch {}
+}
 
 export class ApiError extends Error {
-  constructor(
-      status,
-      code,
-    message,
-      details
-) {
-    super(message);this.status = status;this.code = code;this.details = details;;
+  constructor(status, code, message, details) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.details = details;
     this.name = "ApiError";
   }
 
@@ -49,26 +78,33 @@ export async function request(path, options = {}) {
   // Honour a caller's own cancellation (React Query unmount) as well as the timeout.
   signal?.addEventListener("abort", () => controller.abort(), { once: true });
 
+  const token = getAuthToken();
+  const headers = {
+    ...(body ? { "Content-Type": "application/json" } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const base = getBaseUrl();
   let response;
   try {
-    response = await fetch(`${BASE}${path}`, {
+    response = await fetch(`${base}${path}`, {
       method,
       credentials: "include",
-      headers: body ? { "Content-Type": "application/json" } : undefined,
+      headers: Object.keys(headers).length > 0 ? headers : undefined,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: controller.signal,
     });
   } catch (err) {
     window.clearTimeout(timer);
     if (signal?.aborted) throw new ApiError(0, "ABORTED", "Request cancelled.");
-    const timedOut = (err)?.name === "AbortError";
+    const timedOut = err?.name === "AbortError";
     throw new ApiError(
       0,
       "NETWORK_ERROR",
       timedOut
         ? "The connection is taking too long. Check the network and try again."
         : "Cannot reach the server. Check the network connection and try again."
-);
+    );
   } finally {
     window.clearTimeout(timer);
   }
@@ -80,7 +116,13 @@ export async function request(path, options = {}) {
     try {
       payload = JSON.parse(text);
     } catch {
-      throw new ApiError(response.status, "BAD_RESPONSE", "The server sent an unexpected response.");
+      let msg = "The server sent an unexpected response.";
+      if (response.status === 404) {
+        msg = "The requested API endpoint was not found on the server.";
+      } else if (response.status === 502 || response.status === 503 || response.status === 504) {
+        msg = "The server is temporarily unavailable. Please try again in a moment.";
+      }
+      throw new ApiError(response.status, "BAD_RESPONSE", msg);
     }
   }
 
@@ -88,15 +130,32 @@ export async function request(path, options = {}) {
 
   if (!response.ok || envelope?.success === false) {
     const err = envelope?.error;
-    throw new ApiError(
-      response.status,
-      err?.code ?? "UNKNOWN_ERROR",
-      err?.message ?? "Something went wrong. Please try again.",
-      err?.details
-);
+    let message = "Something went wrong. Please try again.";
+    let code = "UNKNOWN_ERROR";
+    let details = undefined;
+
+    if (typeof err === "string") {
+      message = err;
+    } else if (err && typeof err === "object") {
+      message = err.message ?? envelope?.message ?? message;
+      code = err.code ?? code;
+      details = err.details;
+    } else if (envelope?.message) {
+      message = envelope.message;
+    } else if (response.status === 401) {
+      message = "Invalid username/email or password.";
+    } else if (response.status === 403) {
+      message = "You do not have permission to perform this action.";
+    } else if (response.status === 404) {
+      message = "API endpoint not found.";
+    } else if (response.status >= 500) {
+      message = "Server error. Please try again shortly.";
+    }
+
+    throw new ApiError(response.status, code, message, details);
   }
 
-  return (envelope?.data ?? null);
+  return envelope?.data ?? null;
 }
 
 export const api = {

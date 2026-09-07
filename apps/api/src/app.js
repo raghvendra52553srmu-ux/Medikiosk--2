@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import routes from "./routes/index.js";
+import authRoutes from "./routes/auth.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { globalLimiter } from "./middleware/rateLimit.js";
 import { ApiError } from "./utils/ApiError.js";
@@ -23,7 +24,7 @@ function isLocalOrigin(origin) {
       /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
       /^169\.254\./.test(hostname) ||
       /\.(e2b\.app|ngrok(-free)?\.app|github\.dev|gitpod\.io)$/.test(hostname)
-);
+    );
   } catch {
     return false;
   }
@@ -42,7 +43,13 @@ export function createApp() {
       origin(origin, cb) {
         // Same-origin requests, curl and server-to-server have no Origin header.
         if (!origin) return cb(null, true);
-        if (env.corsOrigins.includes("*") || env.corsOrigins.includes(origin)) return cb(null, true);
+        const norm = origin.trim().replace(/\/$/, "");
+        if (
+          env.corsOrigins.includes("*") ||
+          env.corsOrigins.some((o) => o.trim().replace(/\/$/, "") === norm)
+        ) {
+          return cb(null, true);
+        }
 
         // In development the app is reached over an assortment of hosts —
         // localhost, 127.0.0.1, the LAN IP of a demo laptop, or a preview
@@ -50,11 +57,24 @@ export function createApp() {
         // on a dev machine; production still honours CORS_ORIGIN exactly.
         if (!env.isProd && isLocalOrigin(origin)) return cb(null, true);
 
-        cb(new ApiError(403, "CORS_REJECTED", "This origin is not allowed to call the API."));
+        // Permissive match for Render/Vercel preview domains if production origin includes onrender/vercel
+        try {
+          const { hostname } = new URL(origin);
+          if (
+            /\.(onrender\.com|vercel\.app)$/.test(hostname) &&
+            env.corsOrigins.some((o) => o.includes("onrender.com") || o.includes("vercel.app"))
+          ) {
+            return cb(null, true);
+          }
+        } catch {}
+
+        cb(new ApiError(403, "CORS_REJECTED", `Origin ${origin} is not allowed by CORS.`));
       },
       credentials: true,
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     })
-);
+  );
 
   // Base64 thumbnails make bodies larger than the 100kb default.
   app.use(express.json({ limit: "2mb" }));
@@ -71,6 +91,7 @@ export function createApp() {
   });
 
   app.use("/api", routes);
+  app.use("/auth", authRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

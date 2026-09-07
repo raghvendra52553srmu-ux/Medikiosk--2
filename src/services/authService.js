@@ -1,29 +1,12 @@
-import { api, ApiError } from "@/services/apiClient";
+import { api, ApiError, setAuthToken } from "@/services/apiClient";
 
 /**
  * Staff authentication.
  *
- * The prototype shipped plaintext credentials inside the JS bundle and gated
- * access on a boolean in localStorage — anyone could type
- * `localStorage.setItem('medikiosk.auth.v1','{"doctor":true}')` and open a
- * patient's clinical record.
- *
- * Now: bcrypt-hashed passwords in Postgres, an httpOnly JWT cookie the page's
- * JavaScript cannot read, rate-limited login, and server-side role checks on
- * every protected endpoint. Nothing in this file can grant access on its own.
+ * Passwords securely hashed with bcrypt on the server, an httpOnly JWT cookie,
+ * optional Bearer fallback for third-party cross-origin deployments, rate-limited
+ * login, and server-side role checks on every protected endpoint.
  */
-
-
-
-
-
-
-
-
-
-
-
-
 
 export const STAFF_LABELS = {
   doctor: {
@@ -38,8 +21,6 @@ export const STAFF_LABELS = {
   },
 };
 
-
-
 export async function loginStaff(
   role,
   identifier,
@@ -47,6 +28,10 @@ export async function loginStaff(
 ) {
   try {
     const data = await api.post("/auth/login", { identifier, password });
+
+    if (data?.token) {
+      setAuthToken(data.token);
+    }
 
     // The server authenticates; the client additionally checks the account is
     // the right kind for the door being opened.
@@ -69,6 +54,8 @@ export async function logoutStaff() {
     await api.post("/auth/logout");
   } catch {
     /* logging out must always succeed locally */
+  } finally {
+    setAuthToken(null);
   }
 }
 
@@ -78,8 +65,10 @@ export async function logoutStaff() {
  */
 export async function currentStaff() {
   try {
-    return await api.get("/auth/me");
+    const user = await api.get("/auth/me");
+    return user;
   } catch {
+    setAuthToken(null);
     return null;
   }
 }

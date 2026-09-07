@@ -18,20 +18,22 @@ export function signStaffToken(claims) {
  * the reason we do not keep it in localStorage the way the prototype did.
  */
 export function setAuthCookie(res, token) {
+  const isSecure = Boolean(env.COOKIE_SECURE || env.isProd);
   res.cookie(AUTH_COOKIE, token, {
     httpOnly: true,
-    secure: env.COOKIE_SECURE,
-    sameSite: env.COOKIE_SECURE ? "none" : "lax",
+    secure: isSecure,
+    sameSite: isSecure ? "none" : "lax",
     path: "/",
     maxAge: 8 * 60 * 60 * 1000,
   });
 }
 
 export function clearAuthCookie(res) {
+  const isSecure = Boolean(env.COOKIE_SECURE || env.isProd);
   res.clearCookie(AUTH_COOKIE, {
     httpOnly: true,
-    secure: env.COOKIE_SECURE,
-    sameSite: env.COOKIE_SECURE ? "none" : "lax",
+    secure: isSecure,
+    sameSite: isSecure ? "none" : "lax",
     path: "/",
   });
 }
