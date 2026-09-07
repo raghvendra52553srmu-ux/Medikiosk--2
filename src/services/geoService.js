@@ -21,9 +21,9 @@ const CACHE_KEY = "medikiosk.geo.v4";
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const BASE_RADIUS_M = 15000;
 const WIDE_RADIUS_M = 20000;
-const OVERPASS_TIMEOUT_MS = 8_000;
-const GEOCODE_TIMEOUT_MS = 10_000;
-const REVERSE_TIMEOUT_MS = 8_000;
+const OVERPASS_TIMEOUT_MS = 2_500;
+const GEOCODE_TIMEOUT_MS = 3_500;
+const REVERSE_TIMEOUT_MS = 2_500;
 
 
 
@@ -653,8 +653,8 @@ export async function fetchFacilities(
   // cost the patient their hospital list.
   const placePromise = reverseGeocode(normCoords);
 
-  // Progressive radius search: 10 km -> 25 km -> 50 km
-  let radius = 10000;
+  // Single fast-batch facility query (35 km radius covering nearby hospitals & clinics in one call)
+  let radius = 35000;
   let widened = false;
   let elements = [];
 
@@ -662,28 +662,6 @@ export async function fetchFacilities(
     elements = await queryFacilities(normCoords, radius, signal);
   } catch (e) {
     if (signal?.aborted) throw e;
-  }
-
-  if (elements.length < 2) {
-    radius = 25000;
-    widened = true;
-    try {
-      const more = await queryFacilities(normCoords, radius, signal);
-      if (more.length > elements.length) elements = more;
-    } catch (e) {
-      if (signal?.aborted) throw e;
-    }
-  }
-
-  if (elements.length < 2) {
-    radius = 50000;
-    widened = true;
-    try {
-      const more = await queryFacilities(normCoords, radius, signal);
-      if (more.length > elements.length) elements = more;
-    } catch (e) {
-      if (signal?.aborted) throw e;
-    }
   }
 
   const seen = new Set();
@@ -834,7 +812,7 @@ export function requestDeviceLocation(signal) {
     const onAbort = () => finish({ state: "unavailable", message: "Location request was cancelled." });
     signal?.addEventListener("abort", onAbort);
 
-    // Try high accuracy first; if unavailable/timeout, try low accuracy before giving up
+    // 1. Fast Wi-Fi / cell / cached position first (near-instantaneous, ~150-300ms)
     navigator.geolocation.getCurrentPosition(
       pos =>
         finish({
@@ -845,29 +823,29 @@ export function requestDeviceLocation(signal) {
       err => {
         if (err.code === err.PERMISSION_DENIED) {
           finish({ state: "denied" });
-        } else {
-          // Retry with low accuracy (faster and works on Wi-Fi without GPS hardware)
-          navigator.geolocation.getCurrentPosition(
-            pos2 =>
-              finish({
-                state: "granted",
-                coords: { lat: Number(pos2.coords.latitude), lon: Number(pos2.coords.longitude) },
-                accuracy: Math.round(pos2.coords.accuracy ?? 0),
-              }),
-            err2 => {
-              if (err2.code === err2.PERMISSION_DENIED) {
-                finish({ state: "denied" });
-              } else if (err2.code === err2.POSITION_UNAVAILABLE) {
-                finish({ state: "unavailable", message: "No GPS fix available. Move near a window or enter your area." });
-              } else {
-                finish({ state: "unavailable", message: "Timed out while reading your position." });
-              }
-            },
-            { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 }
-          );
+          return;
         }
+        // 2. Fallback to GPS / high accuracy with quick timeout
+        navigator.geolocation.getCurrentPosition(
+          pos2 =>
+            finish({
+              state: "granted",
+              coords: { lat: Number(pos2.coords.latitude), lon: Number(pos2.coords.longitude) },
+              accuracy: Math.round(pos2.coords.accuracy ?? 0),
+            }),
+          err2 => {
+            if (err2.code === err2.PERMISSION_DENIED) {
+              finish({ state: "denied" });
+            } else if (err2.code === err2.POSITION_UNAVAILABLE) {
+              finish({ state: "unavailable", message: "No location fix available. Enter your area manually." });
+            } else {
+              finish({ state: "unavailable", message: "Timed out while reading your position." });
+            }
+          },
+          { enableHighAccuracy: true, timeout: 3500, maximumAge: 300000 }
+        );
       },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      { enableHighAccuracy: false, timeout: 3000, maximumAge: 300000 }
     );
   });
 }
