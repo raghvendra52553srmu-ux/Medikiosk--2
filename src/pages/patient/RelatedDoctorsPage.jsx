@@ -286,8 +286,8 @@ export default function RelatedDoctorsPage() {
       department: doc.department,
     });
 
-    // Continue to Step 6: Existing Registration Flow (Consent -> Registration -> History -> Documents -> Review -> Token)
-    navigate("/patient/consent");
+    // Continue to Registration Step
+    navigate("/patient/registration");
   };
 
   return (

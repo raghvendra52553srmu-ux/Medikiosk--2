@@ -11,6 +11,7 @@ import {
   completePatient,
   getDoctorQueue,
   markAbsent,
+  startConsultation,
 } from "@/services/queueService";
 import { currentStaff } from "@/services/authService";
 import { errorMessage } from "@/services/apiClient";
@@ -74,11 +75,25 @@ export default function DoctorQueue() {
 
   const mutate = useMutation({
     mutationFn: ({ row, action }) => {
-      const fn = action === "call" ? callPatient : action === "complete" ? completePatient : markAbsent;
+      const fn =
+        action === "call"
+          ? callPatient
+          : action === "start"
+          ? startConsultation
+          : action === "complete"
+          ? completePatient
+          : markAbsent;
       return fn(row.tokenId);
     },
     onSuccess: (_data, { row, action }) => {
-      const verb = action === "call" ? "called" : action === "complete" ? "completed" : "marked absent";
+      const verb =
+        action === "call"
+          ? "called"
+          : action === "start"
+          ? "consultation started"
+          : action === "complete"
+          ? "completed"
+          : "marked absent";
       toast(`${row.tokenNumber} ${verb}.`);
       invalidate();
     },
@@ -217,13 +232,13 @@ export default function DoctorQueue() {
                       <span>
                         {row.attentionItems > 0 ? (
                           <Badge tone="flag"><AlertTriangle className="h-3 w-3" />{row.attentionItems}</Badge>
-) : (
+                        ) : (
                           <span className="text-sm sm:text-base text-ink/60">—</span>
-)}
+                        )}
                       </span>
                       <span className="tabular text-sm sm:text-base text-ink/70">{row.estimatedTime}</span>
                       <div className="flex justify-end gap-1">
-                        {row.status === "waiting" && (
+                        {(row.status === "waiting" || row.status === "almost") && (
                           <Button
                             size="sm"
                             variant="ghost"
@@ -232,20 +247,30 @@ export default function DoctorQueue() {
                           >
                             Call
                           </Button>
-)}
+                        )}
+                        {row.status === "called" && (
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            disabled={mutate.isPending}
+                            onClick={() => act(row, "start")}
+                          >
+                            Start
+                          </Button>
+                        )}
                         {(row.status === "called" || row.status === "in-consultation") && (
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant={row.status === "in-consultation" ? "primary" : "ghost"}
                             disabled={mutate.isPending}
                             onClick={() => act(row, "complete")}
                           >
                             Done
                           </Button>
-)}
+                        )}
                         <Button
                           size="sm"
-                          variant={row.status === "called" || row.status === "in-consultation" ? "primary" : "ghost"}
+                          variant="ghost"
                           onClick={() => navigate(`/doctor/patient/${row.tokenId}`)}
                         >
                           Review
@@ -271,7 +296,7 @@ export default function DoctorQueue() {
                         <Badge tone="quiet"><FileText className="h-3 w-3" />{row.documentsCount}</Badge>
                         {row.attentionItems > 0 && <Badge tone="flag"><AlertTriangle className="h-3 w-3" />{row.attentionItems}</Badge>}
                         <div className="ml-auto flex gap-1">
-                          {row.status === "waiting" && (
+                          {(row.status === "waiting" || row.status === "almost") && (
                             <Button
                               size="sm"
                               variant="ghost"
@@ -280,17 +305,27 @@ export default function DoctorQueue() {
                             >
                               Call
                             </Button>
-)}
+                          )}
+                          {row.status === "called" && (
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              disabled={mutate.isPending}
+                              onClick={() => act(row, "start")}
+                            >
+                              Start
+                            </Button>
+                          )}
                           {(row.status === "called" || row.status === "in-consultation") && (
                             <Button
                               size="sm"
-                              variant="ghost"
+                              variant={row.status === "in-consultation" ? "primary" : "ghost"}
                               disabled={mutate.isPending}
                               onClick={() => act(row, "complete")}
                             >
                               Done
                             </Button>
-)}
+                          )}
                           <Button
                             size="sm"
                             variant="ghost"
@@ -305,7 +340,7 @@ export default function DoctorQueue() {
                       </div>
                     </div>
                   </li>
-);
+                );
               })}
             </ul>
           </div>

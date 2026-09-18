@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DoctorLayout } from "@/components/layout/DoctorLayout";
 import { Badge } from "@/components/ui/Badge";
@@ -12,31 +12,39 @@ import { SourceBadge } from "@/components/ui/SourceBadge";
 import { Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { getPatientChart, patientInitials, updateChartSummary, verifyChart } from "@/services/chartService";
+import { completePatient } from "@/services/queueService";
 import { errorMessage } from "@/services/apiClient";
 import { qk } from "@/lib/queryClient";
 
 import { cn } from "@/utils/cn";
 import {
-  AlertTriangle, ArrowLeft, CheckCircle2, Clock, FileText, FlaskConical,
-  History, Layers, PencilLine, ShieldCheck,
+  AlertTriangle, ArrowLeft, Calendar, Check, CheckCircle2, Clock, FileText, FlaskConical,
+  History, Layers, PencilLine, ShieldCheck, Stethoscope,
 } from "lucide-react";
-
-
 
 export default function PatientDetail() {
   // The route param is the token id — the same handle the queue board uses.
   const { patientId: tokenId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [tab, setTab] = useState("summary");
+  const [tab, setTab] = useState(() => searchParams.get("tab") || "summary");
   const [editing, setEditing] = useState(null);
   const [draft, setDraft] = useState("");
+  const [notes, setNotes] = useState("");
+  const [followUpRequired, setFollowUpRequired] = useState(true);
+  const [followUpDate, setFollowUpDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 10);
+  });
+  const [followUpInstructions, setFollowUpInstructions] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [openSections, setOpenSections] = useState(
     new Set(["complaint", "hpi", "medications", "flags"])
-);
+  );
 
   const {
     data: chart,
@@ -105,6 +113,24 @@ export default function PatientDetail() {
       setConfirmOpen(false);
       toast(errorMessage(err), { tone: "flag" });
     },
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: () =>
+      completePatient(tokenId, {
+        required: followUpRequired,
+        date: followUpDate,
+        instructions: followUpInstructions,
+        notes,
+      }),
+    onSuccess: () => {
+      toast("Consultation marked completed.", {
+        detail: "Follow-up instructions saved and patient record updated.",
+      });
+      void queryClient.invalidateQueries({ queryKey: qk.chart(tokenId) });
+      void queryClient.invalidateQueries({ queryKey: ["queue"] });
+    },
+    onError: (err) => toast(errorMessage(err), { tone: "flag" }),
   });
 
   if (loading) {
@@ -229,6 +255,14 @@ export default function PatientDetail() {
           </div>
         </header>
 
+        {/* Clinical Responsibility Notice Banner */}
+        <div className="mb-4 flex items-center gap-3 rounded-[12px] border border-amber-500/40 bg-amber-50/80 p-3.5 text-left dark:border-amber-500/30 dark:bg-amber-950/40 shadow-xs">
+          <ShieldCheck className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <p className="text-xs sm:text-sm text-zinc-700 dark:text-zinc-300">
+            <strong className="font-bold text-zinc-900 dark:text-zinc-100">Clinical Responsibility Notice:</strong> MediKiosk does NOT present AI-generated or system-compiled information as a final diagnosis. The treating doctor remains solely responsible for clinical decisions, physical examination, and final diagnosis.
+          </p>
+        </div>
+
         {/* Tabs */}
         <div className="relative mb-4 flex gap-1 overflow-x-auto border-b border-line">
           {tabs.map(item => (
@@ -256,7 +290,7 @@ export default function PatientDetail() {
         </div>
 
         {tab === "summary" && (
-          <div className="grid gap-4 lg:grid-cols-[1fr_290px]">
+          <div className="grid gap-4 lg:grid-cols-[1fr_310px]">
             <div className="space-y-2.5">
               {sections.map(section => {
                 const open = openSections.has(section.key);
@@ -329,6 +363,87 @@ export default function PatientDetail() {
             </div>
 
             <aside className="space-y-3">
+              {/* Consultation & Patient Follow-up Management Card */}
+              <Card padding="none" className="overflow-hidden border border-emerald-500/40 bg-white shadow-xs dark:border-emerald-500/30 dark:bg-zinc-900">
+                <div className="flex items-center justify-between border-b border-emerald-500/20 bg-emerald-50/70 px-4 py-3 dark:bg-emerald-950/40">
+                  <div className="flex items-center gap-2">
+                    <Stethoscope className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <h2 className="font-display text-base font-bold text-zinc-900 dark:text-zinc-50">
+                      Consultation & Follow-up
+                    </h2>
+                  </div>
+                  <Badge tone={token.status === "completed" ? "done" : "solid"}>
+                    {token.status === "completed" ? "Completed" : "In Room"}
+                  </Badge>
+                </div>
+
+                <div className="space-y-3.5 p-4 text-left">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">
+                      Doctor Clinical Notes & Findings
+                    </label>
+                    <textarea
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      placeholder="Enter clinical examination notes, provisional diagnosis or advice…"
+                      className="w-full rounded-[10px] border border-zinc-200 bg-zinc-50/80 p-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-100 min-h-[72px]"
+                    />
+                  </div>
+
+                  <div className="rounded-[10px] border border-zinc-200 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                        Follow-up Required
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={followUpRequired}
+                        onChange={e => setFollowUpRequired(e.target.checked)}
+                        className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                      />
+                    </div>
+
+                    {followUpRequired && (
+                      <div className="mt-2.5 space-y-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                        <div>
+                          <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                            Follow-up Date
+                          </label>
+                          <input
+                            type="date"
+                            value={followUpDate}
+                            onChange={e => setFollowUpDate(e.target.value)}
+                            className="w-full rounded-[8px] border border-zinc-200 bg-white p-1.5 text-sm text-zinc-900 focus:border-emerald-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                            Patient Instructions
+                          </label>
+                          <input
+                            type="text"
+                            value={followUpInstructions}
+                            onChange={e => setFollowUpInstructions(e.target.value)}
+                            placeholder="e.g. Continue medication, review CBC"
+                            className="w-full rounded-[8px] border border-zinc-200 bg-white p-1.5 text-sm text-zinc-900 focus:border-emerald-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    size="md"
+                    className="w-full"
+                    disabled={completeMutation.isPending}
+                    onClick={() => completeMutation.mutate()}
+                  >
+                    {completeMutation.isPending ? "Saving…" : token.status === "completed" ? "Update Follow-up & Notes" : "Complete Consultation"}
+                  </Button>
+                </div>
+              </Card>
+
               <Card padding="none" className="overflow-hidden border-ink/25 bg-white/75">
                 <div className="flex items-center gap-2 border-b border-line px-4 py-3">
                   <AlertTriangle className="h-4 w-4 text-ink" />
@@ -452,47 +567,104 @@ export default function PatientDetail() {
 )
 )}
 
-        {tab === "timeline" && (
-          timeline.length === 0 ? (
-            <EmptyState
-              icon={<History className="h-5 w-5" />}
-              title="No previous medical events"
-              description="Nothing was readable from the attached records that could be placed on a timeline."
-            />
-) : (
-            <Card padding="md" className="border-line bg-white/55">
-              <ol className="relative">
-                {timeline.map((event, i) => (
-                  <li key={event.id} className="flex gap-4 pb-5 last:pb-0">
-                    <div className="flex flex-col items-center">
-                      <span className={cn(
-                        "mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2",
-                        event.type === "investigation" ? "border-ink bg-white"
-                          : event.type === "prescription" ? "border-ink/45 bg-ink/45"
-                          : "border-ink bg-ink"
-)} />
-                      {i < timeline.length - 1 && <span className="my-1 w-px flex-1 bg-line" />}
+        {tab === "timeline" && (() => {
+          // Synthesize chronological medical events: past records + current visit + follow-up
+          const currentEvents = [
+            ...timeline,
+            {
+              id: "tl-current-opd",
+              date: new Date().toISOString().slice(0, 10),
+              type: "consultation",
+              title: `${token.department} OPD Consultation`,
+              description: `Patient registered with complaint: ${summary.chiefComplaint || token.patientName}. Token #${token.number}.`,
+              doctor: token.doctorName,
+              facility: token.hospitalName,
+              source: "clinician-verified",
+            },
+            ...(followUpRequired ? [{
+              id: "tl-follow-up",
+              date: followUpDate,
+              type: "follow-up",
+              title: "Scheduled OPD Follow-up",
+              description: followUpInstructions || "Follow-up clinical review and assessment.",
+              doctor: token.doctorName,
+              facility: token.hospitalName,
+              source: "clinician-verified",
+            }] : []),
+          ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+          // Group by Year
+          const yearGroups = {};
+          for (const ev of currentEvents) {
+            const y = new Date(ev.date).getFullYear() || 2026;
+            if (!yearGroups[y]) yearGroups[y] = [];
+            yearGroups[y].push(ev);
+          }
+
+          return (
+            <Card padding="md" className="border-line bg-white/55 text-left">
+              <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
+                <div className="flex items-center gap-2">
+                  <History className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <h2 className="font-display text-lg font-bold text-ink">Medical Timeline</h2>
+                </div>
+                <Badge tone="quiet">{currentEvents.length} events recorded</Badge>
+              </div>
+
+              <div className="space-y-6">
+                {Object.keys(yearGroups).sort((a, b) => Number(b) - Number(a)).map(year => (
+                  <div key={year} className="relative">
+                    {/* Year badge */}
+                    <div className="inline-flex items-center gap-2 mb-3">
+                      <span className="rounded-lg bg-emerald-600 px-3 py-1 font-mono text-base font-black text-white dark:bg-emerald-500 dark:text-zinc-950 shadow-xs">
+                        {year}
+                      </span>
+                      <span className="h-px w-24 bg-emerald-500/40" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="tabular flex flex-wrap items-center gap-2 text-sm text-ink/60">
-                        {new Date(event.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                        <span className="rounded border border-line px-1.5 py-px text-sm uppercase tracking-[0.08em]">{event.type}</span>
-                        <SourceBadge source={event.source} />
-                      </p>
-                      <p className="mt-1 text-base font-medium text-ink">{event.title}</p>
-                      <p className="mt-1 max-w-2xl text-base leading-relaxed text-ink/65">{event.description}</p>
-                      {(event.doctor || event.facility) && (
-                        <p className="mt-1 text-sm text-ink/60">
-                          {[event.doctor, event.facility].filter(Boolean).join(" · ")}
-                        </p>
-)}
-                    </div>
-                  </li>
-))}
-              </ol>
+
+                    <ul className="ml-4 border-l-2 border-emerald-500/30 pl-4 space-y-4">
+                      {yearGroups[year].map((event) => (
+                        <li key={event.id} className="relative flex items-start gap-3">
+                          <span className={cn(
+                            "absolute -left-[23px] mt-1.5 h-3.5 w-3.5 rounded-full border-2",
+                            event.type === "consultation" ? "border-emerald-600 bg-white dark:border-emerald-400"
+                              : event.type === "investigation" ? "border-indigo-600 bg-white dark:border-indigo-400"
+                              : event.type === "prescription" ? "border-amber-600 bg-white dark:border-amber-400"
+                              : "border-teal-600 bg-teal-600 dark:border-teal-400"
+                          )} />
+
+                          <div className="min-w-0 flex-1 rounded-[12px] border border-line bg-white/70 p-3.5 shadow-2xs">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-bold text-base text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                                ├── {event.title}
+                              </span>
+                              <span className="tabular font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                                {new Date(event.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                              </span>
+                            </div>
+
+                            <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
+                              {event.description}
+                            </p>
+
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                              <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-semibold uppercase tracking-wider dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
+                                {event.type}
+                              </span>
+                              {event.facility && <span>· {event.facility}</span>}
+                              {event.doctor && <span>· {event.doctor}</span>}
+                              <SourceBadge source={event.source} />
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
             </Card>
-)
-)}
+          );
+        })()}
 
         {tab === "labs" && (
           <div className="glass overflow-hidden rounded-[14px]">

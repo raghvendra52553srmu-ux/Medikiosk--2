@@ -6,36 +6,43 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { logoutStaff } from "@/services/authService";
 import { cn } from "@/utils/cn";
 import {
+  AlertCircle,
   ArrowRight,
+  BarChart3,
   Building2,
+  Check,
   CheckCircle2,
   ChevronDown,
   ClipboardList,
+  FileCheck,
+  FileText,
   Globe2,
   HeartHandshake,
   History,
+  Landmark,
   Lock,
+  MapPin,
   Menu,
   Mic,
+  Moon,
   ShieldCheck,
+  Smartphone,
+  Sparkles,
   Stethoscope,
   Ticket,
   User,
-  X,
-  BarChart3,
-  Smartphone,
-  Moon,
-  FileText,
   Users,
-  Landmark,
+  X,
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const NAV_LINKS = [
   { label: "Home", href: "home" },
   { label: "About", href: "about" },
-  { label: "How It Works", href: "how-it-works" },
+  { label: "Patient Flow", href: "how-it-works" },
+  { label: "Doctor Workflow", href: "doctor-workflow" },
   { label: "Features", href: "features" },
+  { label: "Pricing (Demo)", href: "pricing" },
   { label: "Roles", href: "roles" },
 ];
 
@@ -56,59 +63,104 @@ const STEPS = [
   {
     number: "01", icon: Globe2,
     title: "Choose Your Language",
-    desc: "Patients interact with the kiosk in their preferred language from six regional options.",
+    desc: "Patients interact with the kiosk in their preferred language (English, Hindi, Bengali, Marathi, Tamil, Telugu) with large touch targets.",
     cardCls: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60",
     iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
     iconCls: "text-emerald-700 dark:text-emerald-400",
     numCls: "text-emerald-600 dark:text-emerald-500",
   },
   {
-    number: "02", icon: User,
-    title: "Register at the Kiosk",
-    desc: "Enter basic details — name, age, gender and mobile — to begin the OPD intake process.",
-    cardCls: "bg-white dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800",
-    iconBg: "bg-zinc-100 dark:bg-zinc-800",
-    iconCls: "text-zinc-700 dark:text-zinc-300",
-    numCls: "text-zinc-500 dark:text-zinc-400",
-  },
-  {
-    number: "03", icon: Mic,
-    title: "Share Your History",
-    desc: "Speak or type your symptoms and medical history before the consultation — works in your language.",
+    number: "02", icon: Mic,
+    title: "Problem & Symptoms Intake",
+    desc: "Patients describe chief complaints using voice recognition or category buttons in their own regional language.",
     cardCls: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50",
     iconBg: "bg-amber-100 dark:bg-amber-900/50",
     iconCls: "text-amber-700 dark:text-amber-400",
     numCls: "text-amber-600 dark:text-amber-500",
   },
   {
-    number: "04", icon: Ticket,
-    title: "Receive Your OPD Token",
-    desc: "The system generates your OPD token and places you into the doctor's queue automatically.",
+    number: "03", icon: MapPin,
+    title: "Location & OPD Wing Selection",
+    desc: "Patients confirm their clinic or OPD department location ensuring they are routed to the proper hospital facility.",
+    cardCls: "bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/50",
+    iconBg: "bg-sky-100 dark:bg-sky-900/50",
+    iconCls: "text-sky-700 dark:text-sky-400",
+    numCls: "text-sky-600 dark:text-sky-500",
+  },
+  {
+    number: "04", icon: Stethoscope,
+    title: "Related Doctors & Clinician Selection",
+    desc: "Browse matching specialists with real-time room numbers, availability, qualifications, and consultation details.",
+    cardCls: "bg-teal-50 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800/50",
+    iconBg: "bg-teal-100 dark:bg-teal-900/50",
+    iconCls: "text-teal-700 dark:text-teal-400",
+    numCls: "text-teal-600 dark:text-teal-500",
+  },
+  {
+    number: "05", icon: User,
+    title: "Quick Patient Registration",
+    desc: "Enter patient name, age, biological sex, phone number, and optional ABHA ID / UHID for hospital records.",
+    cardCls: "bg-white dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800",
+    iconBg: "bg-zinc-100 dark:bg-zinc-800",
+    iconCls: "text-zinc-700 dark:text-zinc-300",
+    numCls: "text-zinc-500 dark:text-zinc-400",
+  },
+  {
+    number: "06", icon: History,
+    title: "Structured Medical History",
+    desc: "Capture existing conditions (Diabetes, Hypertension), ongoing medications, drug allergies, and duration.",
     cardCls: "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800/50",
     iconBg: "bg-indigo-100 dark:bg-indigo-900/50",
     iconCls: "text-indigo-700 dark:text-indigo-400",
     numCls: "text-indigo-600 dark:text-indigo-500",
   },
   {
-    number: "05", icon: Stethoscope,
-    title: "Doctor Reviews Before Consultation",
-    desc: "The doctor reviews your submitted history and symptoms before calling you into the room.",
-    cardCls: "bg-teal-50 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800/50",
-    iconBg: "bg-teal-100 dark:bg-teal-900/50",
-    iconCls: "text-teal-700 dark:text-teal-400",
-    numCls: "text-teal-600 dark:text-teal-500",
+    number: "07", icon: FileText,
+    title: "Upload & OCR Document Scanning",
+    desc: "Scan previous prescriptions and lab reports directly at the kiosk with in-browser Tesseract OCR text extraction.",
+    cardCls: "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/50",
+    iconBg: "bg-purple-100 dark:bg-purple-900/50",
+    iconCls: "text-purple-700 dark:text-purple-400",
+    numCls: "text-purple-600 dark:text-purple-500",
+  },
+  {
+    number: "08", icon: FileCheck,
+    title: "Structured Patient Summary",
+    desc: "Review a comprehensive intake summary on the kiosk screen before confirming and generating the OPD token.",
+    cardCls: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+    iconCls: "text-emerald-700 dark:text-emerald-400",
+    numCls: "text-emerald-600 dark:text-emerald-500",
+  },
+  {
+    number: "09", icon: Ticket,
+    title: "Live OPD Token & Queue Tracking",
+    desc: "Receive an OPD token number with live waiting position and estimated consultation time.",
+    cardCls: "bg-cyan-50 dark:bg-cyan-950/30 border-cyan-200 dark:border-cyan-800/50",
+    iconBg: "bg-cyan-100 dark:bg-cyan-900/50",
+    iconCls: "text-cyan-700 dark:text-cyan-400",
+    numCls: "text-cyan-600 dark:text-cyan-500",
+  },
+  {
+    number: "10", icon: CheckCircle2,
+    title: "Doctor Consultation & Follow-up",
+    desc: "Doctor reviews pre-consultation clinical snapshot and medical timeline, records clinical notes, and assigns a follow-up plan.",
+    cardCls: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+    iconCls: "text-emerald-700 dark:text-emerald-400",
+    numCls: "text-emerald-600 dark:text-emerald-500",
   },
 ];
 
 const VALUE_PROPS = [
-  "Reduce repetitive OPD registration paperwork",
-  "Capture patient history before the consultation begins",
-  "Give doctors structured information earlier",
-  "Improve patient flow through the OPD",
-  "Separate patient and staff access by role",
-  "Provide a kiosk-friendly experience for all literacy levels",
-  "Support multilingual patient interaction",
-  "Enable hospital operations visibility for admins",
+  "Hospital first-mile platform: connects problem, doctor routing, and clinical intake",
+  "Capture structured patient history and allergies before consultation begins",
+  "OCR document digitization directly at the kiosk terminal",
+  "Doctors receive organized clinical snapshots, previous reports, and medical timelines",
+  "Zero referral commissions: purely ethical clinical decision support and workflow",
+  "Live token queue management with real-time room pace tracking",
+  "B2B hospital subscription model — basic kiosk usage is 100% free for patients",
+  "Role-based workstation security separating public kiosks from clinical records",
 ];
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
@@ -117,7 +169,7 @@ export default function LandingPage() {
   const { setRole, t } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handlePatientStart = () => { setRole("patient"); navigate("/patient/problem"); };
+  const handlePatientStart = () => { setRole("patient"); navigate("/patient/language"); };
   const handleDoctorLogin = () => navigate("/doctor/dashboard");
   const handleAdminLogin = () => navigate("/admin/dashboard");
 
@@ -274,15 +326,26 @@ export default function LandingPage() {
             </p>
 
             {/* Flow pills */}
-            <div className="reveal mt-8 flex flex-wrap items-center gap-2"
+            <div className="reveal mt-8 flex flex-wrap items-center gap-1.5 sm:gap-2"
               style={{ "--i": 3 } }
             >
-              {["Patient", "History", "OPD Token", "Doctor"].map((step, i, arr) => (
-                <span key={step} className="flex items-center gap-2">
-                  <span className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-base font-semibold text-zinc-800 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
+              {[
+                "Language",
+                "Problem",
+                "Location",
+                "Doctor",
+                "Registration",
+                "History",
+                "Documents",
+                "Summary",
+                "OPD Token",
+                "Consultation",
+              ].map((step, i, arr) => (
+                <span key={step} className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-zinc-800 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
                     {step}
                   </span>
-                  {i < arr.length - 1 && <ArrowRight className="h-4 w-4 text-zinc-400 dark:text-zinc-600 shrink-0" />}
+                  {i < arr.length - 1 && <ArrowRight className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-600 shrink-0" />}
                 </span>
 ))}
             </div>
@@ -525,6 +588,84 @@ export default function LandingPage() {
             </div>
           </section>
 
+          {/* ── DOCTOR WORKFLOW & RETENTION ────────────────── */}
+          <section id="doctor-workflow" className="py-16 lg:py-20 scroll-mt-16 border-t border-zinc-100 dark:border-zinc-900">
+            <div className="mb-12">
+              <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/40 bg-teal-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-800 dark:border-teal-500/40 dark:bg-teal-950/60 dark:text-teal-300 mb-3">
+                <Stethoscope className="h-3.5 w-3.5" />
+                Doctor-Centric Design · Clinical Integrity
+              </div>
+              <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                Designed for Doctors. Zero Commissions.
+              </h2>
+              <p className="mt-3 text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-2xl">
+                MediKiosk delivers clinical value through workflow efficiency and structured pre-intake patient context — never through referral fees, test kickbacks, or pharmacy markups.
+              </p>
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400 mb-5">
+                  <ClipboardList className="h-5 w-5" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-50">Pre-Consultation Snapshot</h3>
+                <p className="mt-2 text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  Review chief complaints, ongoing medications, drug allergies, and OCR-digitized past reports before calling the patient.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 mb-5">
+                  <History className="h-5 w-5" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-50">Chronological Medical Timeline</h3>
+                <p className="mt-2 text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  Visual year-by-year history tree connecting past visits, blood reports, prescriptions, and follow-ups in a single glance.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 mb-5">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-50">Ethical Healthcare Policy</h3>
+                <p className="mt-2 text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  No referral commissions for diagnostic tests or medicines. Doctors retain 100% diagnostic autonomy without algorithmic diagnosis claims.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-400 mb-5">
+                  <Users className="h-5 w-5" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-50">Queue State Control</h3>
+                <p className="mt-2 text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  Four-stage state machine: WAITING → CALL PATIENT → START CONSULTATION → COMPLETE CONSULTATION with live room pace.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 mb-5">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-50">Integrated Follow-up Tracking</h3>
+                <p className="mt-2 text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  Record clinician notes, schedule follow-up visit dates, and provide patient instructions saved directly into audit trails.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 mb-5">
+                  <Lock className="h-5 w-5" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-50">Isolated Clinician Sessions</h3>
+                <p className="mt-2 text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  PIN-secured doctor portal automatically locks when navigating to public screens, preserving patient privacy at shared kiosks.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* ── WHY MEDIKIOSK ─────────────────────────────── */}
           <section className="py-16 border-t border-zinc-100 dark:border-zinc-900">
             <div className="rounded-2xl border border-zinc-200 bg-white p-7 sm:p-10 dark:border-zinc-800 dark:bg-zinc-900">
@@ -544,6 +685,137 @@ export default function LandingPage() {
                     {prop}
                   </div>
 ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── PRICING & HOSPITAL BUSINESS MODEL (DEMO) ────── */}
+          <section id="pricing" className="py-16 lg:py-20 scroll-mt-16 border-t border-zinc-100 dark:border-zinc-900">
+            <div className="mb-12">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/60 dark:text-amber-300 mb-3">
+                <AlertCircle className="h-3.5 w-3.5" />
+                Proposed B2B Model · Demonstration Only
+              </div>
+              <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                Transparent Hospital Subscription
+              </h2>
+              <p className="mt-3 text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-3xl">
+                MediKiosk is designed as a B2B platform for hospitals and health networks. Basic kiosk registration and token tracking is 100% free for all patients. No real payments are processed on this demonstration platform.
+              </p>
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Patient Basic */}
+              <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/50 p-6 flex flex-col justify-between dark:border-emerald-500/30 dark:bg-emerald-950/20">
+                <div>
+                  <span className="inline-flex rounded-md bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 mb-3">
+                    Patient Open Access
+                  </span>
+                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Basic Kiosk Use</h3>
+                  <div className="mt-4 flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-zinc-900 dark:text-zinc-50">₹0</span>
+                    <span className="text-sm font-semibold text-zinc-500">/ always free</span>
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    Free for patients at hospital kiosk terminals.
+                  </p>
+                  <ul className="mt-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Multilingual intake</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Voice symptom recording</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Document OCR scanning</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Live OPD token status</li>
+                  </ul>
+                </div>
+                <div className="mt-8">
+                  <button
+                    type="button"
+                    onClick={handlePatientStart}
+                    className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-500 dark:bg-emerald-500 dark:text-zinc-950"
+                  >
+                    Start Patient Intake
+                  </button>
+                </div>
+              </div>
+
+              {/* Community Hospital */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 flex flex-col justify-between dark:border-zinc-800 dark:bg-zinc-900">
+                <div>
+                  <span className="inline-flex rounded-md bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-3">
+                    Clinic / Nursing Home
+                  </span>
+                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Community OPD</h3>
+                  <div className="mt-4 flex items-baseline gap-1">
+                    <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">₹4,999</span>
+                    <span className="text-sm font-semibold text-zinc-500">/ mo (Demo)</span>
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    Ideal for standalone clinics up to 3 doctor rooms.
+                  </p>
+                  <ul className="mt-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> 1-2 Kiosk Terminals</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Up to 5 Doctor Logins</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Real-time Queue Socket</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Standard Email Support</li>
+                  </ul>
+                </div>
+                <div className="mt-8">
+                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed B2B tier</span>
+                </div>
+              </div>
+
+              {/* Multi-Specialty Hospital */}
+              <div className="relative rounded-2xl border-2 border-zinc-900 bg-white p-6 flex flex-col justify-between dark:border-zinc-100 dark:bg-zinc-900 shadow-md">
+                <span className="absolute -top-3 right-4 rounded-full bg-zinc-900 dark:bg-white px-3 py-0.5 text-xs font-bold text-white dark:text-zinc-950">
+                  Popular
+                </span>
+                <div>
+                  <span className="inline-flex rounded-md bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-3">
+                    Multi-Specialty
+                  </span>
+                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Hospital Campus</h3>
+                  <div className="mt-4 flex items-baseline gap-1">
+                    <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">₹14,999</span>
+                    <span className="text-sm font-semibold text-zinc-500">/ mo (Demo)</span>
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    Full OPD wing with multi-department doctor routing.
+                  </p>
+                  <ul className="mt-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Up to 10 Kiosks</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Unlimited Doctor Portals</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Hospital Admin Dashboard</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Medical Timeline Storage</li>
+                  </ul>
+                </div>
+                <div className="mt-8">
+                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed B2B tier</span>
+                </div>
+              </div>
+
+              {/* Enterprise Network */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 flex flex-col justify-between dark:border-zinc-800 dark:bg-zinc-900">
+                <div>
+                  <span className="inline-flex rounded-md bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-3">
+                    Healthcare Network
+                  </span>
+                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Enterprise Chain</h3>
+                  <div className="mt-4 flex items-baseline gap-1">
+                    <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">Custom</span>
+                    <span className="text-sm font-semibold text-zinc-500">/ SLA (Demo)</span>
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    Government or private multi-facility networks.
+                  </p>
+                  <ul className="mt-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Multi-location kiosk sync</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> On-prem / Hybrid Deploy</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Dedicated 24/7 SLA</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Hardware Maintenance</li>
+                  </ul>
+                </div>
+                <div className="mt-8">
+                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed B2B tier</span>
+                </div>
               </div>
             </div>
           </section>
@@ -645,8 +917,10 @@ export default function LandingPage() {
               <ul className="space-y-2.5">
                 {[
                   { label: "Home", action: () => scrollTo("home") },
-                  { label: "How It Works", action: () => scrollTo("how-it-works") },
+                  { label: "Patient Flow", action: () => scrollTo("how-it-works") },
+                  { label: "Doctor Workflow", action: () => scrollTo("doctor-workflow") },
                   { label: "Features", action: () => scrollTo("features") },
+                  { label: "Pricing (Demo)", action: () => scrollTo("pricing") },
                   { label: "Roles", action: () => scrollTo("roles") },
                 ].map(item => (
                   <li key={item.label}>

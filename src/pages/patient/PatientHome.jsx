@@ -29,7 +29,7 @@ export default function PatientHome() {
             size="kiosk"
             icon={<ClipboardPlus className="h-[18px] w-[18px]" />}
             iconRight={<ArrowRight className="h-4 w-4" />}
-            onClick={() => navigate("/patient/problem")}
+            onClick={() => navigate("/patient/language")}
           >
             {t("home.newRegistration")}
           </Button>

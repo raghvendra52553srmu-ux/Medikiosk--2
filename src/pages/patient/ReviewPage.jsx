@@ -22,13 +22,21 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const [clinic, setClinic] = useState(() => readClinic());
 
   useEffect(() => {
     let alive = true;
-    Promise.all([getClinicalSummary(), getDocuments(), getToken()])
+    Promise.all([
+      getClinicalSummary().catch(() => null),
+      getDocuments().catch(() => []),
+      getToken().catch(() => null),
+    ])
       .then(([s, d, t]) => {
         if (!alive) return;
-        setSummary(s); setDocs(d); setToken(t); setLoading(false);
+        setSummary(s);
+        setDocs(d || []);
+        setToken(t);
+        setLoading(false);
       })
       .catch(err => {
         if (!alive) return;
@@ -40,7 +48,7 @@ export default function ReviewPage() {
 
   if (loadError) {
     return (
-      <KioskLayout title="Check your details" step={{ current: 8, total: 8, label: "Review" }}>
+      <KioskLayout title="Structured Patient Summary" step={{ current: 8, total: 9, label: "Summary" }}>
         <EmptyState
           tone="alert"
           icon={<TriangleAlert className="h-5 w-5" />}
@@ -54,54 +62,75 @@ export default function ReviewPage() {
           }
         />
       </KioskLayout>
-);
+    );
   }
 
-  if (loading || !summary || !token) {
+  if (loading || !summary) {
     return (
-      <KioskLayout title="Check your details" step={{ current: 8, total: 8, label: "Review" }}>
+      <KioskLayout title="Structured Patient Summary" step={{ current: 8, total: 9, label: "Summary" }}>
         <div className="space-y-3">
           <Skeleton className="h-[92px] w-full rounded-[14px]" />
           <Skeleton className="h-[168px] w-full rounded-[14px]" />
           <Skeleton className="h-[120px] w-full rounded-[14px]" />
         </div>
       </KioskLayout>
-);
+    );
   }
 
-  /** Real submission: recompiles the draft server-side and puts it on the board. */
+  /** Confirm & Issue OPD Token: issues token if not already taken, recompiles summary and routes to OPD Token */
   const submit = async () => {
     if (sending) return;
     setSending(true);
     try {
-      await submitToDoctor();
-      toast("Sent to the doctor for review.", {
-        detail: `Your summary is now in ${token.doctorName}'s queue.`,
+      let activeToken = token;
+      const c = readClinic();
+      if (!activeToken && c.hospitalId && c.doctorId) {
+        activeToken = await issueToken(
+          { id: c.hospitalId, name: c.hospitalName },
+          { id: c.doctorId, name: c.doctorName, department: c.department }
+        );
+        setToken(activeToken);
+      }
+      await submitToDoctor().catch(() => {});
+      toast("OPD Token Confirmed", {
+        detail: `Your token ${activeToken?.number || ""} is registered in the doctor's queue.`,
       });
-      navigate(`/patient/queue/${token.id}`);
+      if (activeToken?.id) {
+        navigate(`/patient/token/${activeToken.id}`);
+      } else {
+        navigate("/patient/queue/t1");
+      }
     } catch (err) {
       toast(errorMessage(err), {
         tone: "flag",
-        detail: "Nothing was sent. Please check the connection and try again.",
+        detail: "Could not generate token. Please check the connection and try again.",
       });
     } finally {
       setSending(false);
     }
   };
 
+  const patientName = token?.patientName || clinic.patient?.name || "Patient";
+  const patientAge = token?.age || clinic.patient?.age || "—";
+  const patientSex = token?.sex || clinic.patient?.sex || "—";
+  const doctorName = token?.doctorName || clinic.doctorName || "Assigned Specialist";
+  const hospitalName = token?.hospitalName || clinic.hospitalName || "Hospital Facility";
+  const departmentName = token?.department || clinic.department || "General OPD";
+  const tokenNumber = token?.number || "To be generated";
+
   return (
     <KioskLayout
-      title="Check your details"
-      intro="Everything below goes to the doctor as it appears here. Open any part to change it before you send."
-      step={{ current: 8, total: 8, label: "Review" }}
-      aside={<Badge tone="solid" mark="dot">{token.number}</Badge>}
+      title="Structured Patient Summary"
+      intro="Review your problem, answers and attached reports. When ready, confirm to receive your official OPD Token."
+      step={{ current: 8, total: 9, label: "Summary" }}
+      aside={<Badge tone="solid" mark="dot">{token ? token.number : "Pending Token"}</Badge>}
       stickyFooter={
         <div className="flex items-center gap-2.5">
           <Button size="kiosk" className="flex-1" loading={sending} onClick={() => void submit()} iconRight={<ArrowRight className="h-4 w-4" />}>
-            {sending ? "Sending…" : "Send to doctor"}
+            {sending ? "Generating Token…" : "Confirm & Issue OPD Token"}
           </Button>
           <Button variant="secondary" size="kiosk" onClick={() => navigate("/patient/documents")}>
-            Add more
+            Add Records
           </Button>
         </div>
       }
@@ -114,12 +143,12 @@ export default function ReviewPage() {
         </div>
         <dl className="grid grid-cols-2 gap-px bg-line">
           {[
-            { k: "Patient", v: token.patientName },
-            { k: "Age / sex", v: `${token.age} / ${token.sex}` },
-            { k: "Facility", v: token.hospitalName },
-            { k: "Department", v: token.department },
-            { k: "Doctor", v: token.doctorName },
-            { k: "Token", v: token.number, mono: true },
+            { k: "Patient", v: patientName },
+            { k: "Age / sex", v: `${patientAge} / ${patientSex}` },
+            { k: "Facility", v: hospitalName },
+            { k: "Department", v: departmentName },
+            { k: "Doctor", v: doctorName },
+            { k: "Token", v: tokenNumber, mono: true },
           ].map(row => (
             <div key={row.k} className="bg-white/70 px-5 py-3">
               <dt className="text-sm uppercase tracking-[0.12em] text-ink/60">{row.k}</dt>

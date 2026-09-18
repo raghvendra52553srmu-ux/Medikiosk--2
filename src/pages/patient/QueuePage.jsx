@@ -89,7 +89,9 @@ export default function QueuePage() {
   const ahead = token.patientsAhead;
   const serving = token.currentServing;
   const state =
-    token.status === "in-consultation" || token.status === "called"
+    token.status === "completed"
+      ? "completed"
+      : token.status === "in-consultation" || token.status === "called"
       ? "called"
       : ahead === 0
         ? "called"
@@ -108,6 +110,48 @@ export default function QueuePage() {
       intro={copy.action}
       aside={<Badge tone={state === "waiting" ? "neutral" : "solid"} mark={state === "waiting" ? "ring" : "dot"}>{copy.label}</Badge>}
     >
+      {/* Follow-up card if completed or follow-up recorded */}
+      {(token.status === "completed" || token.followUp) && (
+        <div className="mb-4 rounded-[16px] border border-emerald-500/40 bg-emerald-50/80 p-4.5 text-left dark:border-emerald-500/30 dark:bg-emerald-950/40 shadow-xs">
+          <div className="flex items-start gap-3.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold dark:bg-emerald-500 dark:text-zinc-950 shadow-sm">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-base font-extrabold text-zinc-900 dark:text-zinc-50">
+                  Doctor Consultation & Follow-up Details
+                </h3>
+                <Badge tone="solid" mark="dot">Consultation Complete</Badge>
+              </div>
+              <p className="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                {token.doctorName} · {token.department} Department
+              </p>
+              <div className="mt-3 rounded-[12px] bg-white/80 p-3 dark:bg-zinc-900/80 border border-emerald-500/20">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                  Follow-up Requirement
+                </p>
+                <p className="mt-0.5 text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  {token.followUp?.required !== false
+                    ? `Follow-up required${token.followUp?.date ? ` on ${token.followUp.date}` : " as advised"}`
+                    : "No routine follow-up required"}
+                </p>
+                {token.followUp?.instructions && (
+                  <div className="mt-2 border-t border-emerald-500/15 pt-2">
+                    <p className="text-xs font-extrabold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                      Doctor's Instructions
+                    </p>
+                    <p className="mt-0.5 text-base font-medium text-zinc-800 dark:text-zinc-200">
+                      {token.followUp.instructions}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-[18px] border-2 border-zinc-200 bg-white shadow-md dark:border-zinc-800 dark:bg-zinc-900 text-left">
         <div className="grid grid-cols-1 items-center gap-5 border-b border-zinc-200 px-5 py-5 sm:grid-cols-[auto_1fr] sm:px-6 dark:border-zinc-800">
           <div>
@@ -126,7 +170,7 @@ export default function QueuePage() {
             <div>
               <p className="text-sm font-extrabold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Ahead of You</p>
               <p className="tabular mt-1 font-mono text-2xl font-black leading-tight text-emerald-700 dark:text-emerald-400 sm:text-3xl">
-                {state === "called" ? "Your turn" : ahead === 1 ? "1 patient" : `${ahead} patients`}
+                {token.status === "completed" ? "Completed" : state === "called" ? "Your turn" : ahead === 1 ? "1 patient" : `${ahead} patients`}
               </p>
             </div>
             <div>

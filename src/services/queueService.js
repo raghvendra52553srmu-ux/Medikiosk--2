@@ -40,12 +40,12 @@ export async function getQueueMetrics(doctorId) {
 
 
 
-const act = (tokenId, action) =>
-  api.post(`/queue/${tokenId}/${action}`);
+const act = (tokenId, action, body) =>
+  api.post(`/queue/${tokenId}/${action}`, body);
 
 export const callPatient = (tokenId) => act(tokenId, "call");
 export const startConsultation = (tokenId) => act(tokenId, "start");
-export const completePatient = (tokenId) => act(tokenId, "complete");
+export const completePatient = (tokenId, followUp) => act(tokenId, "complete", followUp ? { followUp } : undefined);
 export const markAbsent = (tokenId) => act(tokenId, "absent");
 
 ;

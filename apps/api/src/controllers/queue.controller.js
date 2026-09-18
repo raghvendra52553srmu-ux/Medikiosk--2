@@ -100,6 +100,6 @@ export async function queueMetrics(req, res) {
 /** call | start | complete | absent — validated against the state machine. */
 export async function actOnToken(req, res) {
   const { id, action } = req.params;
-  const updated = await transitionToken(id, action, req.staff.sub);
+  const updated = await transitionToken(id, action, req.staff.sub, req.body);
   return ok(res, { id: updated.id, number: updated.number, status: updated.status }, `Patient marked ${action}.`);
 }

@@ -12,7 +12,7 @@ export default function LanguagePage() {
     <KioskLayout
       title={t("language.title")}
       intro={t("language.helper")}
-      step={{ current: 2, total: 10, label: "Language" }}
+      step={{ current: 1, total: 10, label: "Language" }}
     >
       <div className="grid gap-2.5 sm:grid-cols-2">
         {languages.map((lang, i) => {
@@ -20,7 +20,7 @@ export default function LanguagePage() {
           return (
             <button
               key={lang.code}
-              onClick={() => { setLanguage(lang); navigate("/patient/registration"); }}
+              onClick={() => { setLanguage(lang); navigate("/patient/problem"); }}
               aria-pressed={selected}
               style={{ ["--i" ]: i }}
               className={cn(

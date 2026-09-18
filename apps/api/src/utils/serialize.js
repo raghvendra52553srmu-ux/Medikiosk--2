@@ -129,6 +129,7 @@ export function serializeToken(
     currentServing: extra.nowServing ?? "—",
     patientsAhead: extra.patientsAhead ?? 0,
     status: tokenStatusToUi(t.status),
+    followUp: extra.followUp ?? t.session?.auditLogs?.[0]?.meta?.followUp ?? null,
   };
 }
 

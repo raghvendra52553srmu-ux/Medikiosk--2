@@ -39,7 +39,7 @@ export async function issueToken(params) {
  */
 const RETRYABLE = new Set(["P2034", "P2002"]);
 
-async function withSerializableRetry(fn, attempts = 6) {
+async function withSerializableRetry(fn, attempts = 15) {
   let lastError;
   for (let i = 0; i < attempts; i++) {
     try {
@@ -49,13 +49,21 @@ async function withSerializableRetry(fn, attempts = 6) {
         err instanceof Prisma.PrismaClientKnownRequestError ? err.code : undefined;
       const pgCode =
         typeof err === "object" && err !== null && "code" in err ? String((err).code) : undefined;
+      const msg = typeof err === "object" && err !== null && "message" in err ? String(err.message) : "";
 
-      if (!code || !RETRYABLE.has(code)) {
-        if (pgCode !== "40001") throw err;
+      const isDeadlockOrConflict =
+        (code && RETRYABLE.has(code)) ||
+        pgCode === "40001" ||
+        msg.includes("deadlock") ||
+        msg.includes("write conflict") ||
+        msg.includes("Please retry your transaction");
+
+      if (!isDeadlockOrConflict) {
+        throw err;
       }
       lastError = err;
       // Exponential backoff with jitter so retries de-synchronise.
-      await new Promise((r) => setTimeout(r, 15 * 2 ** i + Math.random() * 25));
+      await new Promise((r) => setTimeout(r, 25 * 2 ** i + Math.random() * 50));
     }
   }
   throw lastError;
@@ -141,7 +149,18 @@ export async function getTokenPosition(tokenId) {
     include: {
       doctor: { select: { id: true, name: true, slotMinutes: true, room: true, department: { select: { name: true } } } },
       hospital: { select: { name: true } },
-      session: { select: { name: true, age: true, sex: true } },
+      session: {
+        select: {
+          name: true,
+          age: true,
+          sex: true,
+          auditLogs: {
+            where: { action: { contains: "complete" } },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
+      },
     },
   });
   if (!token) throw ApiError.notFound("We could not find that token.");
@@ -237,8 +256,15 @@ export async function getQueueMetrics(doctorId, date = serviceDateFor()) {
     active.find((t) => t.status === TokenStatus.WAITING) ??
     null;
 
+  const waitingCount = active.filter((t) => t.status === TokenStatus.WAITING || t.status === TokenStatus.ALMOST).length;
+  const inConsultationCount = active.filter((t) => t.status === TokenStatus.IN_CONSULTATION || t.status === TokenStatus.CALLED).length;
+  const totalPatients = active.length + completedToday + absentToday;
+
   return {
     inQueue: active.length,
+    totalPatients,
+    waitingCount,
+    inConsultationCount,
     historyReady,
     awaitingSignOff,
     flagged: flaggedRows.length,
@@ -266,7 +292,8 @@ const TRANSITIONS = {
 export async function transitionToken(
   tokenId,
   action,
-  staffId
+  staffId,
+  meta = null
 ) {
   const result = await prisma.$transaction(async (tx) => {
     const token = await tx.queueToken.findUnique({ where: { id: tokenId } });
@@ -276,7 +303,7 @@ export async function transitionToken(
     if (!allowed.includes(token.status)) {
       throw ApiError.conflict(
         `Cannot ${action} a token that is already ${token.status.toLowerCase().replace(/_/g, " ")}.`
-);
+      );
     }
 
     const now = new Date();
@@ -324,9 +351,10 @@ export async function transitionToken(
         action: `Token ${token.number} — ${action}`,
         entity: "QueueToken",
         entityId: tokenId,
+        meta: meta ? { ...meta } : undefined,
       },
       tx
-);
+    );
 
     return updated;
   });

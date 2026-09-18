@@ -115,28 +115,32 @@ export default function DoctorDashboard() {
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Morning OPD" : hour < 17 ? "Afternoon OPD" : "Evening OPD";
+  const totalPatients = metrics ? (metrics.totalPatients ?? (metrics.inQueue + metrics.completedToday + (metrics.absentToday || 0))) : 0;
+  const waitingCount = metrics ? (metrics.waitingCount ?? metrics.inQueue) : 0;
+  const inConsultationCount = metrics ? (metrics.inConsultationCount ?? (metrics.next?.status === "in-consultation" || metrics.next?.status === "called" ? 1 : 0)) : 0;
+  const completedCount = metrics ? metrics.completedToday : 0;
 
   const cards = metrics
     ? [
         {
-          k: "Seen today",
-          v: String(metrics.completedToday),
-          sub: `of ${metrics.slotCapacity} slot capacity`,
+          k: "Total Patients",
+          v: String(totalPatients),
+          sub: "Registered OPD patients today",
         },
         {
-          k: "In your queue",
-          v: String(metrics.inQueue),
-          sub: `${metrics.historyReady} with history ready`,
+          k: "Waiting",
+          v: String(waitingCount),
+          sub: `${metrics.historyReady || 0} with history ready`,
         },
         {
-          k: "Median wait",
-          v: metrics.medianWaitMin === 0 ? "—" : `${metrics.medianWaitMin}m`,
-          sub: "target under 30m",
+          k: "In Consultation",
+          v: String(inConsultationCount),
+          sub: inConsultationCount > 0 ? "Patient in room" : "Station available",
         },
         {
-          k: "Awaiting sign-off",
-          v: String(metrics.awaitingSignOff),
-          sub: "history ready, still in line",
+          k: "Completed",
+          v: String(completedCount),
+          sub: `of ${metrics.slotCapacity || 30} estimated slot capacity`,
         },
       ]
     : [];
@@ -144,7 +148,7 @@ export default function DoctorDashboard() {
   return (
     <DoctorLayout>
       <div className="mx-auto max-w-[1400px]">
-        <div className="reveal mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div className="reveal mb-4 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl md:text-4xl font-semibold leading-tight tracking-[-0.03em] text-ink sm:text-4xl md:text-5xl">
               {greeting}
@@ -161,7 +165,7 @@ export default function DoctorDashboard() {
                   <span className="h-1.5 w-1.5 rounded-full bg-ink" />
                   Station paused
                 </span>
-)}
+              )}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -186,9 +190,15 @@ export default function DoctorDashboard() {
           </div>
         </div>
 
+        {/* Today's OPD Header & Metrics */}
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-display text-xl font-bold tracking-tight text-ink">Today's OPD</h2>
+          <span className="text-xs uppercase tracking-wider font-semibold text-ink/50">Live OPD Roster</span>
+        </div>
+
         {/* Metrics */}
         <div
-          className="reveal mb-4 grid gap-px overflow-hidden rounded-[14px] border border-line bg-line sm:grid-cols-2 lg:grid-cols-4"
+          className="reveal mb-5 grid gap-px overflow-hidden rounded-[14px] border border-line bg-line sm:grid-cols-2 lg:grid-cols-4"
           style={{ ["--i" ]: 1 }}
         >
           {loading || !metrics
@@ -198,7 +208,7 @@ export default function DoctorDashboard() {
                   <Skeleton className="mt-2 h-7 w-12" />
                   <Skeleton className="mt-2 h-3 w-28" />
                 </div>
-))
+              ))
             : cards.map(m => (
                 <div
                   key={m.k}
@@ -210,7 +220,7 @@ export default function DoctorDashboard() {
                   </p>
                   <p className="mt-1.5 text-sm text-ink/60">{m.sub}</p>
                 </div>
-))}
+              ))}
         </div>
 
         <div className="grid items-start gap-4 lg:grid-cols-[1.5fr_1fr]">
@@ -221,7 +231,7 @@ export default function DoctorDashboard() {
               <Skeleton className="mt-4 h-14 w-full" />
               <Skeleton className="mt-3 h-10 w-48" />
             </Card>
-) : isError ? (
+          ) : isError ? (
             <EmptyState
               tone="alert"
               className="h-full justify-center"
@@ -234,7 +244,7 @@ export default function DoctorDashboard() {
                 </Button>
               }
             />
-) : next === null ? (
+          ) : next === null ? (
             <EmptyState
               className="h-full justify-center"
               icon={<CheckCircle2 className="h-5 w-5" />}
@@ -251,16 +261,16 @@ export default function DoctorDashboard() {
                 </Button>
               }
             />
-) : (
+          ) : (
             <Card padding="none" className="reveal overflow-hidden" style={{ ["--i" ]: 2 }}>
               <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
                 <SectionHeading
                   title={
                     next.status === "in-consultation"
-                      ? "With you now"
+                      ? "CURRENT PATIENT (With you now)"
                       : next.status === "called"
-                      ? "Called — waiting at the door"
-                      : "Next in line"
+                      ? "NEXT PATIENT (Called to Room)"
+                      : "NEXT PATIENT"
                   }
                   meta={
                     paused
@@ -273,7 +283,7 @@ export default function DoctorDashboard() {
                     <Badge tone="outline" mark="ring">
                       Paused
                     </Badge>
-)}
+                  )}
                   <Badge tone="solid" mark="dot">
                     {statusLabel(next.status)}
                   </Badge>
@@ -291,66 +301,99 @@ export default function DoctorDashboard() {
                       {next.patientName}
                     </p>
                     <p className="mt-0.5 text-sm sm:text-base text-ink/55">
-                      {next.age} / {next.sex}
+                      {next.age} / {next.sex} · Token #{next.tokenNumber}
                     </p>
                   </div>
                 </div>
                 <div>
                   <p className="text-sm uppercase tracking-[0.12em] text-ink/60">
-                    Giving the history for
+                    Main Problem
                   </p>
-                  <p className="mt-1 text-base leading-relaxed text-ink">{next.chiefComplaint}</p>
+                  <p className="mt-1 text-base font-medium leading-relaxed text-ink">{next.chiefComplaint}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-ink/55">
+                    <Badge tone="neutral">
+                      {next.answeredCount > 0 ? "First-time OPD Visit" : "Walk-in Visit"}
+                    </Badge>
                     {next.historyStatus === "ready" ? (
                       <Badge tone="done">
                         <ClipboardCheck className="h-3 w-3" />
                         History ready
                       </Badge>
-) : next.historyStatus === "in-progress" ? (
+                    ) : next.historyStatus === "in-progress" ? (
                       <Badge tone="flag" mark="ring">
                         History in progress
                       </Badge>
-) : (
+                    ) : (
                       <Badge tone="quiet" mark="ring">
                         History pending
                       </Badge>
-)}
+                    )}
                     <Badge tone="quiet">
                       <FileText className="h-3 w-3" />
-                      {next.documentsCount} document{next.documentsCount === 1 ? "" : "s"}
+                      {next.documentsCount} document{next.documentsCount === 1 ? "" : "s"} available
                     </Badge>
                     {next.attentionItems > 0 && (
                       <Badge tone="flag">
                         <AlertTriangle className="h-3 w-3" />
                         {next.attentionItems} flag{next.attentionItems === 1 ? "" : "s"}
                       </Badge>
-)}
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 border-t border-line bg-ink/[0.02] px-5 py-3">
+              <div className="flex flex-wrap items-center gap-2 border-t border-line bg-ink/[0.02] px-5 py-3">
                 <Button
                   size="md"
-                  onClick={() => navigate(`/doctor/patient/p-${next.tokenNumber.toLowerCase()}`)}
+                  onClick={() => navigate(`/doctor/patient/${next.tokenId}`)}
                 >
-                  Open file
+                  View Patient
+                </Button>
+                <Button
+                  size="md"
+                  variant="secondary"
+                  onClick={() => navigate(`/doctor/patient/${next.tokenId}?tab=summary`)}
+                >
+                  View History
+                </Button>
+                <Button
+                  size="md"
+                  variant="secondary"
+                  onClick={() => navigate(`/doctor/patient/${next.tokenId}?tab=records`)}
+                >
+                  View Documents
                 </Button>
                 {next.status === "waiting" || next.status === "almost" ? (
-                  <Button size="md" variant="secondary" onClick={() => onCall(next.tokenId)}>
-                    Call patient
+                  <Button size="md" variant="primary" onClick={() => onCall(next.tokenId)}>
+                    Call Patient
                   </Button>
-) : null}
+                ) : null}
                 {next.status === "called" ? (
-                  <Button size="md" variant="secondary" onClick={() => onStart(next.tokenId)}>
-                    Start consultation
+                  <Button
+                    size="md"
+                    variant="primary"
+                    onClick={() => {
+                      onStart(next.tokenId);
+                      navigate(`/doctor/patient/${next.tokenId}`);
+                    }}
+                  >
+                    Start Consultation
                   </Button>
-) : null}
+                ) : null}
+                {next.status === "in-consultation" ? (
+                  <Button
+                    size="md"
+                    variant="primary"
+                    onClick={() => navigate(`/doctor/patient/${next.tokenId}`)}
+                  >
+                    Continue Consultation
+                  </Button>
+                ) : null}
                 {(next.status === "called" || next.status === "in-consultation") && (
                   <Button size="md" variant="secondary" onClick={() => onComplete(next.tokenId)}>
                     Complete
                   </Button>
-)}
+                )}
                 <Button
                   size="md"
                   variant="tertiary"
@@ -367,7 +410,7 @@ export default function DoctorDashboard() {
                 </Button>
               </div>
             </Card>
-)}
+          )}
 
           {/* Needs attention */}
           <Card padding="none" className="reveal overflow-hidden" style={{ ["--i" ]: 3 }}>
