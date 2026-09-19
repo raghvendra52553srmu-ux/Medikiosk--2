@@ -33,6 +33,12 @@ export async function getPatientChart(tokenId) {
   return api.get(`/charts/${tokenId}`);
 }
 
+/** Doctor queries full real records (consultations, documents, queue, revenue). */
+export async function getDoctorRecords(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/charts/records${query ? `?${query}` : ""}`);
+}
+
 /** Doctor edits the draft before signing. Rejected server-side once verified. */
 export async function updateChartSummary(
   tokenId,

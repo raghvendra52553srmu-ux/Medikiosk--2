@@ -81,14 +81,27 @@ export function createApp() {
   app.use(cookieParser());
   app.use(globalLimiter);
 
-  app.get("/health", async (_req, res) => {
+  const healthHandler = async (_req, res) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
-      res.json({ success: true, data: { status: "ok", db: "up", at: new Date().toISOString() }, message: "Healthy." });
-    } catch {
-      res.status(503).json({ success: false, error: { code: "DATABASE_UNAVAILABLE", message: "Database unreachable." } });
+      return res.json({
+        status: "ok",
+        service: "medikiosk-api",
+        database: "connected",
+      });
+    } catch (err) {
+      // Non-fatal, return structured 503 while database is reconnecting
+      console.warn("[health] Database ping failed:", err?.message || err);
+      return res.status(503).json({
+        status: "ok",
+        service: "medikiosk-api",
+        database: "disconnected",
+      });
     }
-  });
+  };
+
+  app.get("/health", healthHandler);
+  app.get("/api/health", healthHandler);
 
   app.use("/api", routes);
   app.use("/auth", authRoutes);

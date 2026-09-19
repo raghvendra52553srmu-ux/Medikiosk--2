@@ -1,22 +1,22 @@
 import { useEffect } from "react";
-import { io, } from "socket.io-client";
+import { io } from "socket.io-client";
+import { getBaseUrl } from "@/services/apiClient";
 
-/**
- * Live queue updates.
- *
- * The socket is read-only: it carries "something changed" notifications, and the
- * component re-fetches through the normal authenticated REST endpoint. That
- * keeps a single source of truth for authorisation — a socket can never mutate
- * or leak data on its own.
- */
-
-const URL = import.meta.env.VITE_SOCKET_URL ?? import.meta.env.VITE_API_URL?.replace(/\/api$/, "") ?? undefined;
+function getSocketUrl() {
+  if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL;
+  const base = getBaseUrl();
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    return base.replace(/\/api\/?$/, "");
+  }
+  return undefined;
+}
 
 let shared = null;
 
 function getSocket() {
   if (!shared) {
-    shared = io(URL, {
+    const socketUrl = getSocketUrl();
+    shared = io(socketUrl, {
       withCredentials: true,
       transports: ["websocket", "polling"],
       reconnectionDelay: 1000,

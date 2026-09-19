@@ -31,7 +31,8 @@ export const SPECIALITY_ALIASES = {
   "Dermatology": "Dermatology",
   "Cardiology": "Cardiology",
   "Neurology": "Neurology",
-  "Dental": "Dental"
+  "Dental": "Dental",
+  "Dentistry": "Dental"
 };
 
 export const STANDARD_DEPARTMENTS = [

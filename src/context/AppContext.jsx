@@ -4,6 +4,7 @@ import { supportedLanguages, translate, } from '@/i18n/translations';
 
 const STORAGE_KEY = 'medikiosk.session.v1';
 const THEME_STORAGE_KEY = 'medikiosk.theme.v1';
+const FONT_STORAGE_KEY = 'medikiosk.fontScale.v1';
 
 const AppContext = createContext(null);
 
@@ -14,6 +15,16 @@ function readPersisted() {
   } catch {
     return {};
   }
+}
+
+function getInitialFontScale() {
+  try {
+    const saved = localStorage.getItem(FONT_STORAGE_KEY);
+    if (saved === 'sm' || saved === 'normal' || saved === 'lg') return saved;
+  } catch {
+    /* ignore */
+  }
+  return 'normal';
 }
 
 function getInitialTheme() {
@@ -38,6 +49,26 @@ export function AppProvider({ children }) {
     supportedLanguages.find(l => l.code === persisted.languageCode) ?? supportedLanguages[0]
 );
   const [theme, setThemeState] = useState(getInitialTheme);
+  const [fontScale, setFontScaleState] = useState(getInitialFontScale);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (fontScale === 'sm') {
+      root.style.fontSize = '87.5%';
+      root.setAttribute('data-text-scale', 'sm');
+    } else if (fontScale === 'lg') {
+      root.style.fontSize = '115%';
+      root.setAttribute('data-text-scale', 'lg');
+    } else {
+      root.style.fontSize = '100%';
+      root.setAttribute('data-text-scale', 'normal');
+    }
+    try {
+      localStorage.setItem(FONT_STORAGE_KEY, fontScale);
+    } catch {
+      /* ignore */
+    }
+  }, [fontScale]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -66,6 +97,7 @@ export function AppProvider({ children }) {
   const setLanguage = useCallback((next) => setLanguageState(next), []);
   const setTheme = useCallback((next) => setThemeState(next), []);
   const toggleTheme = useCallback(() => setThemeState(prev => (prev === 'dark' ? 'light' : 'dark')), []);
+  const setFontScale = useCallback((scale) => setFontScaleState(scale), []);
 
   const t = useCallback(
     (key, vars) => translate(language.code, key, vars),
@@ -83,6 +115,8 @@ export function AppProvider({ children }) {
         theme,
         setTheme,
         toggleTheme,
+        fontScale,
+        setFontScale,
         t,
       }}
     >

@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider } from "@/context/AppContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { StaffGate } from "@/components/auth/StaffGate";
+import { ServerWakeupNotice } from "@/components/layout/ServerWakeupNotice";
 
 import RoleSelect from "@/pages/RoleSelect";
 import LandingPage from "@/pages/LandingPage";
@@ -43,6 +44,7 @@ export default function App() {
     <HashRouter>
       <AppProvider>
         <ToastProvider>
+          <ServerWakeupNotice />
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/kiosk" element={<RoleSelect />} />

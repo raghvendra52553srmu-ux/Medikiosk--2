@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { useApp } from "@/context/AppContext";
-import { clearClinic } from "@/services/patientService";
-import { Clock, Phone, Mic, CircleHelp, Languages, ShieldCheck, X } from "lucide-react";
+import { Clock, Phone, Mic, CircleHelp, ShieldCheck, X } from "lucide-react";
 
 /**
  * A kiosk stands in a public corridor. If the patient walks away mid-visit we
@@ -109,8 +108,6 @@ const TOPICS = [
 ];
 
 export function HelpPanel({ open, onClose }) {
-  const { language, languages, setLanguage } = useApp();
-
   return (
     <div className={open ? "" : "pointer-events-none"} aria-hidden={!open}>
       <div
@@ -142,28 +139,6 @@ export function HelpPanel({ open, onClose }) {
         </div>
 
         <div className="flex-1 space-y-6 overflow-y-auto p-5">
-          <section>
-            <h3 className="mb-2.5 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-[0.16em] text-ink/60">
-              <Languages className="h-3.5 w-3.5" /> Language
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {languages.map(lang => (
-                <button
-                  key={lang.code}
-                  onClick={() => setLanguage(lang)}
-                  aria-pressed={language.code === lang.code}
-                  className={`h-12 rounded-[10px] border text-base transition-all duration-[320ms] [transition-timing-function:var(--ease-glide)] ${
-                    language.code === lang.code
-                      ? "border-ink bg-ink font-medium text-white shadow-[0_10px_24px_-14px_rgba(11,11,12,0.8)]"
-                      : "border-line-strong bg-white/55 text-ink/75 hover:border-ink/30 hover:bg-white/85"
-                  }`}
-                >
-                  {lang.nativeLabel}
-                </button>
-))}
-            </div>
-          </section>
-
           <section className="space-y-2.5">
             <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-ink/60">
               Common questions

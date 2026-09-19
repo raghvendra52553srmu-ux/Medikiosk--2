@@ -36,47 +36,95 @@ async function loadSession(id) {
 }
 
 export async function createSession(req, res) {
-  const { name, age, sex, mobile, language, kioskName } = req.body
+  console.log("[REGISTRATION] Request received");
+  const { name, age, sex, mobile, language, kioskName } = req.body;
+  console.log("[REGISTRATION] Validation passed");
 
-;
+  try {
+    console.log("[REGISTRATION] Database operation started");
+    const mobileHash = hashMobile(mobile);
 
-  const kiosk = kioskName
-    ? await prisma.kioskDevice.upsert({
-        where: { name: kioskName },
-        create: { name: kioskName },
-        update: { lastSeenAt: new Date(), status: "ONLINE" },
-      })
-    : null;
+    // Idempotency: Check if an active session was already created with these exact details in the last 60 seconds
+    const recentSession = await prisma.patientSession.findFirst({
+      where: {
+        mobileHash,
+        name: name.trim(),
+        age,
+        sex,
+        deletedAt: null,
+        status: { in: [SessionStatus.REGISTERED, SessionStatus.TOKEN_ISSUED] },
+        createdAt: { gte: new Date(Date.now() - 60_000) },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-  const session = await prisma.patientSession.create({
-    data: {
-      name,
-      age,
-      sex,
-      // The raw number is never stored — only a hash plus the last 4 for desk matching.
-      mobileHash: hashMobile(mobile),
-      mobileLast4: mobile.slice(-4),
-      language,
-      consentAt: new Date(),
-      kioskId: kiosk?.id ?? null,
-      expiresAt: new Date(Date.now() + env.SESSION_TTL_HOURS * 3_600_000),
-    },
-  });
+    if (recentSession) {
+      console.log("[REGISTRATION] Idempotent match found. Returning existing active session:", recentSession.id);
+      return created(
+        res,
+        {
+          sessionId: recentSession.id,
+          name: recentSession.name,
+          age: recentSession.age,
+          sex: recentSession.sex,
+          expiresAt: recentSession.expiresAt,
+        },
+        "Registration saved."
+      );
+    }
 
-  await recordAudit({
-    actorType: ActorType.PATIENT,
-    sessionId: session.id,
-    action: "Registered at kiosk",
-    entity: "PatientSession",
-    entityId: session.id,
-    meta: { kiosk: kiosk?.name ?? "unknown", language },
-  });
+    // Gracefully handle kiosk registration without failing patient intake
+    let kiosk = null;
+    if (kioskName) {
+      try {
+        kiosk = await prisma.kioskDevice.upsert({
+          where: { name: kioskName },
+          create: { name: kioskName },
+          update: { lastSeenAt: new Date(), status: "ONLINE" },
+        });
+      } catch (kioskErr) {
+        console.warn("[REGISTRATION] Kiosk telemetry heartbeat non-fatal error:", kioskErr?.message || kioskErr);
+      }
+    }
 
-  return created(
-    res,
-    { sessionId: session.id, name: session.name, age: session.age, sex: session.sex, expiresAt: session.expiresAt },
-    "Registration saved."
-);
+    const session = await prisma.patientSession.create({
+      data: {
+        name: name.trim(),
+        age,
+        sex,
+        mobileHash,
+        mobileLast4: mobile.slice(-4),
+        language,
+        consentAt: new Date(),
+        kioskId: kiosk?.id ?? null,
+        expiresAt: new Date(Date.now() + env.SESSION_TTL_HOURS * 3_600_000),
+      },
+    });
+
+    console.log("[REGISTRATION] Patient created successfully. Session ID:", session.id);
+
+    try {
+      await recordAudit({
+        actorType: ActorType.PATIENT,
+        sessionId: session.id,
+        action: "Registered at kiosk",
+        entity: "PatientSession",
+        entityId: session.id,
+        meta: { kiosk: kiosk?.name ?? "unknown", language },
+      });
+    } catch (auditErr) {
+      console.warn("[REGISTRATION] Audit log non-fatal warning:", auditErr?.message || auditErr);
+    }
+
+    return created(
+      res,
+      { sessionId: session.id, name: session.name, age: session.age, sex: session.sex, expiresAt: session.expiresAt },
+      "Registration saved."
+    );
+  } catch (err) {
+    console.error("[REGISTRATION ERROR]", err?.message || err);
+    throw err;
+  }
 }
 
 export async function getSession(req, res) {

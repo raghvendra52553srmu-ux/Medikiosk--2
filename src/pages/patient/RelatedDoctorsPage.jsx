@@ -149,6 +149,16 @@ export default function RelatedDoctorsPage() {
           });
         } else {
           invalidCoordCount++;
+          const fallbackDist = Number.isFinite(Number(doc.hospital?.distanceKm)) ? Number(doc.hospital.distanceKm) : 0;
+          validDocs.push({
+            ...doc,
+            distanceKm: fallbackDist,
+            hospital: {
+              ...doc.hospital,
+              distanceKm: fallbackDist,
+              distanceLabel: doc.hospital?.distanceLabel || formatDistance(fallbackDist),
+            },
+          });
         }
       }
 
@@ -156,7 +166,7 @@ export default function RelatedDoctorsPage() {
       console.log("Selected location:", { latitude: userLat, longitude: userLon });
       console.log("Total doctors received:", allDocs.length);
       console.log("Doctors with valid coordinates:", validCoordCount);
-      console.log("Doctors rejected because of invalid coordinates:", invalidCoordCount);
+      console.log("Doctors with fallback coordinates:", invalidCoordCount);
       console.log(
         "Distance of each valid doctor:",
         validDocs.map((d) => ({
@@ -183,7 +193,13 @@ export default function RelatedDoctorsPage() {
             (normDept.includes("paed") && docSpec.includes("child")) ||
             (normDept.includes("derm") && docSpec.includes("skin")) ||
             ((normDept.includes("eye") || normDept.includes("ophthalm")) &&
-              docSpec.includes("eye")))
+              docSpec.includes("eye")) ||
+            ((normDept.includes("dent") || normDept.includes("tooth")) &&
+              (docDept.includes("dent") || docSpec.includes("dent") || docSpec.includes("tooth"))) ||
+            (normDept.includes("ent") &&
+              (docDept.includes("ent") || docSpec.includes("ear") || docSpec.includes("throat"))) ||
+            ((normDept.includes("women") || normDept.includes("gynae") || normDept.includes("obstetric")) &&
+              (docDept.includes("obstetric") || docDept.includes("gynae") || docSpec.includes("women") || docSpec.includes("gynae"))))
         ) {
           return true;
         }

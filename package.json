@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.js",
+    "dev:client": "vite",
+    "dev:server": "npm --prefix apps/api run dev",
     "build": "vite build",
     "preview": "vite preview",
     "build:kiosk": "vite build --mode kiosk"

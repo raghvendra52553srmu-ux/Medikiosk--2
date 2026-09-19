@@ -10,7 +10,7 @@ export function notFoundHandler(req, _res, next) {
 
 /**
  * The single exit point for every failure.
- * A raw stack trace or a Prisma message never reaches the client.
+ * A raw stack trace or a database password never reaches the client.
  */
 export function errorHandler(err, _req, res, _next) {
   let status = 500;
@@ -26,15 +26,14 @@ export function errorHandler(err, _req, res, _next) {
   } else if (err instanceof ZodError) {
     status = 422;
     code = "VALIDATION_ERROR";
-    message = "Please check the highlighted fields.";
+    message = "Please check the entered information.";
     details = err.issues.map((i) => ({ field: i.path.join("."), message: i.message }));
   } else if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    // Translate DB constraints into user-safe language.
     switch (err.code) {
       case "P2002":
         status = 409;
-        code = "DUPLICATE";
-        message = "That record already exists.";
+        code = "DUPLICATE_RECORD";
+        message = "This registration already exists.";
         break;
       case "P2025":
         status = 404;
@@ -46,25 +45,40 @@ export function errorHandler(err, _req, res, _next) {
         code = "REFERENCE_ERROR";
         message = "That action conflicts with related records.";
         break;
+      // Transient database connection and pool exhaustion errors on Render cold starts:
+      case "P1001": // Can't reach database server
+      case "P1002": // Database server timed out
+      case "P1008": // Operations timed out
+      case "P1017": // Server closed connection
+      case "P2024": // Timed out fetching a new connection from pool
+        status = 503;
+        code = "DATABASE_UNAVAILABLE";
+        message = "Database temporarily unavailable. Please try again.";
+        break;
       default:
         status = 400;
         code = "DATABASE_ERROR";
         message = "The request could not be completed.";
     }
-  } else if (err instanceof Prisma.PrismaClientInitializationError) {
+  } else if (
+    err instanceof Prisma.PrismaClientInitializationError ||
+    err instanceof Prisma.PrismaClientRustPanicError ||
+    err?.name === "PrismaClientInitializationError"
+  ) {
     status = 503;
     code = "DATABASE_UNAVAILABLE";
-    message = "The service is temporarily unavailable. Please try again shortly.";
+    message = "Database temporarily unavailable. Please try again.";
   }
 
-  // Always log the real thing server-side.
+  // Safe server-side diagnostic logging (never logging passwords or patient sensitive data)
   if (status >= 500) {
-    // eslint-disable-next-line no-console
-    console.error("[error]", err);
+    console.error(`[API ERROR ${status}] [${code}]:`, err?.message || err);
   }
 
-  res.status(status).json({
+  return res.status(status).json({
     success: false,
+    message,
+    code,
     error: {
       code,
       message,

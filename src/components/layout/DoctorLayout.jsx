@@ -1,18 +1,19 @@
 import { useState, } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { LayoutDashboard, Users, Settings, LogOut, Menu, X, ChevronDown, MapPin } from "lucide-react";
+import { LayoutDashboard, Users, Settings, LogOut, Menu, X, ChevronDown, MapPin, ClipboardCheck, FileText } from "lucide-react";
 import { readFacilitySession } from "@/services/hospitalService";
 import { logoutStaff } from "@/services/authService";
 
 const NAV = [
-  { to: "/doctor/dashboard", label: "Today", icon: LayoutDashboard },
+  { to: "/doctor/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/doctor/queue?tab=patients", label: "Patients", icon: ClipboardCheck },
   { to: "/doctor/queue", label: "Queue", icon: Users },
-  { to: "/doctor/settings", label: "Settings", icon: Settings },
+  { to: "/doctor/dashboard#records", label: "Records", icon: FileText },
+  { to: "/doctor/settings", label: "Profile", icon: Settings },
 ];
 
-import { LanguageSelector } from "@/components/layout/LanguageSelector";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { AccessibilityToolbar } from "@/components/layout/AccessibilityToolbar";
 
 export function DoctorLayout({ children }) {
   const [navOpen, setNavOpen] = useState(false);
@@ -121,8 +122,7 @@ export function DoctorLayout({ children }) {
           <div className="flex-1" />
 
           <div className="flex items-center gap-2">
-            <LanguageSelector variant="compact" />
-            <ThemeToggle />
+            <AccessibilityToolbar />
             <button className="group flex items-center gap-2.5 rounded-[10px] border border-zinc-200 bg-white/55 dark:border-zinc-700 dark:bg-white/[0.06] py-1.5 pl-1.5 pr-2.5 transition-all duration-[320ms] [transition-timing-function:var(--ease-glide)] hover:border-zinc-300 hover:bg-white/85 dark:hover:border-zinc-600 dark:hover:bg-white/10">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white dark:bg-white dark:text-zinc-950">SP</span>
               <span className="hidden text-left sm:block">

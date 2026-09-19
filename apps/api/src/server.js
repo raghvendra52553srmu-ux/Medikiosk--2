@@ -8,18 +8,31 @@ const app = createApp();
 const httpServer = createServer(app);
 attachRealtime(httpServer);
 
-async function start() {
-  try {
-    await prisma.$connect();
-  } catch (err) {
-    console.error("[boot] Cannot reach the database. Check DATABASE_URL.\n", err);
-    process.exit(1);
+async function connectWithRetry(retries = 5, delayMs = 2000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await prisma.$connect();
+      console.log("[boot] Database connected successfully.");
+      return true;
+    } catch (err) {
+      console.warn(`[boot] Database connection attempt ${attempt}/${retries} failed: ${err?.message || err}`);
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, delayMs * attempt));
+      }
+    }
   }
+  console.error("[boot] Database connection could not be established after retries. API will return 503 until DB is reachable.");
+  return false;
+}
 
+async function start() {
   httpServer.listen(env.PORT, () => {
     console.log(`[medikiosk-api] listening on :${env.PORT}  (${env.NODE_ENV})`);
     console.log(`[medikiosk-api] CORS origins: ${env.corsOrigins.join(", ")}`);
   });
+
+  // Connect database in background without blocking server port or crashing on cold-start
+  void connectWithRetry();
 }
 
 /** Finish in-flight requests before dying so a deploy never truncates a write. */

@@ -4,6 +4,7 @@ import { ok } from "../utils/respond.js";
 import { serializeDoctor } from "../utils/serialize.js";
 import { serviceDateFor } from "../services/queue.service.js";
 import { ensureHospitalRoster } from "../services/roster.service.js";
+import { SPECIALITY_ALIASES } from "../config/roster.js";
 
 /**
  * Facility discovery stays in the browser (OpenStreetMap, already resilient with
@@ -69,14 +70,12 @@ export async function listDoctors(req, res) {
   const { hospitalId, department, q } = req.query;
   if (!hospitalId) throw ApiError.badRequest("A facility must be selected first.");
 
+  const canonicalDept = department ? (SPECIALITY_ALIASES[department] || department) : undefined;
+
   const doctors = await prisma.doctor.findMany({
     where: {
       hospitalId,
-      // MySQL's default collation (utf8mb4_general_ci / unicode_ci) is already
-      // case-insensitive for contains/equals, and Prisma's `mode: "insensitive"`
-      // argument is Postgres-only — passing it here would throw a validation
-      // error against a MySQL datasource, so it's simply omitted.
-      ...(department ? { department: { name: { equals: department } } } : {}),
+      ...(canonicalDept ? { department: { name: { equals: canonicalDept } } } : {}),
       ...(q
         ? {
             OR: [

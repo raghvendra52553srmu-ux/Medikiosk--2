@@ -12,6 +12,7 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
+  FRONTEND_URL: z.string().optional(),
   SESSION_TTL_HOURS: z.coerce.number().int().positive().default(12),
   COOKIE_SECURE: z
     .string()
@@ -30,10 +31,15 @@ if (!parsed.success) {
   process.exit(1);
 }
 
+const rawOrigins = [
+  ...parsed.data.CORS_ORIGIN.split(","),
+  ...(parsed.data.FRONTEND_URL ? parsed.data.FRONTEND_URL.split(",") : []),
+];
+
 export const env = {
   ...parsed.data,
   isProd: parsed.data.NODE_ENV === "production",
-  corsOrigins: parsed.data.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean),
+  corsOrigins: Array.from(new Set(rawOrigins.map((s) => s.trim()).filter(Boolean))),
 };
 
 // A production deployment must not run with insecure cookies.

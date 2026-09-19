@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
-import { LanguageSelector } from "@/components/layout/LanguageSelector";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { AccessibilityToolbar } from "@/components/layout/AccessibilityToolbar";
 import { logoutStaff } from "@/services/authService";
 import { cn } from "@/utils/cn";
 import {
@@ -25,6 +24,7 @@ import {
   Menu,
   Mic,
   Moon,
+  Phone,
   ShieldCheck,
   Smartphone,
   Sparkles,
@@ -37,13 +37,9 @@ import {
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const NAV_LINKS = [
-  { label: "Home", href: "home" },
-  { label: "About", href: "about" },
-  { label: "Patient Flow", href: "how-it-works" },
-  { label: "Doctor Workflow", href: "doctor-workflow" },
-  { label: "Features", href: "features" },
-  { label: "Pricing (Demo)", href: "pricing" },
-  { label: "Roles", href: "roles" },
+  { label: "Home", action: "home" },
+  { label: "About Us", action: "about-us" },
+  { label: "Support", action: "support" },
 ];
 
 const FEATURES = [
@@ -169,13 +165,24 @@ export default function LandingPage() {
   const { setRole, t } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handlePatientStart = () => { setRole("patient"); navigate("/patient/language"); };
+  const handlePatientStart = () => { setRole("patient"); navigate("/patient/problem"); };
   const handleDoctorLogin = () => navigate("/doctor/dashboard");
   const handleAdminLogin = () => navigate("/admin/dashboard");
 
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMobileMenuOpen(false);
+  };
+
+  const handleNavClick = (link) => {
+    setMobileMenuOpen(false);
+    if (link.action === "home") {
+      scrollTo("home");
+    } else if (link.action === "about-us") {
+      scrollTo("about-us");
+    } else if (link.action === "support") {
+      scrollTo("support");
+    }
   };
 
   // Returning to the public home screen ends any staff session on this terminal,
@@ -189,7 +196,19 @@ export default function LandingPage() {
     <div className="app-ambient min-h-screen flex flex-col" id="home">
 
       {/* ────────────────── NAVBAR ────────────────── */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/90 backdrop-blur-2xl saturate-150 dark:border-zinc-800 dark:bg-zinc-950/90 shadow-sm">
+      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/95 backdrop-blur-2xl saturate-150 dark:border-zinc-800 dark:bg-zinc-950/95 shadow-sm">
+        {/* Top Accessibility Strip — Positioned above Nav Bar & Login Buttons */}
+        <div className="border-b border-zinc-200/80 bg-zinc-50/95 dark:border-zinc-800/80 dark:bg-zinc-900/80 py-1 px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="hidden sm:inline">National Health Mission · OPD Kiosk System</span>
+              <span className="sm:hidden">MediKiosk Portal</span>
+            </div>
+            <AccessibilityToolbar variant="strip" />
+          </div>
+        </div>
+
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
 
           {/* Brand */}
@@ -213,12 +232,12 @@ export default function LandingPage() {
               <button
                 key={link.label}
                 type="button"
-                onClick={() => scrollTo(link.href)}
+                onClick={() => handleNavClick(link)}
                 className="whitespace-nowrap rounded-lg px-3 py-2 text-base font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 transition-all duration-150 cursor-pointer"
               >
                 {link.label}
               </button>
-))}
+            ))}
           </nav>
 
           {/* Right controls */}
@@ -247,8 +266,6 @@ export default function LandingPage() {
               <Building2 className="h-4 w-4" />
               Hospital Admin
             </button>
-            <LanguageSelector variant="compact" />
-            <ThemeToggle />
             <button
               type="button"
               onClick={() => setMobileMenuOpen(v => !v)}
@@ -270,7 +287,7 @@ export default function LandingPage() {
               <button
                 key={link.label}
                 type="button"
-                onClick={() => scrollTo(link.href)}
+                onClick={() => handleNavClick(link)}
                 className="w-full text-left rounded-lg px-3 py-2.5 text-lg font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 cursor-pointer"
               >
                 {link.label}
@@ -666,16 +683,16 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* ── WHY MEDIKIOSK ─────────────────────────────── */}
-          <section className="py-16 border-t border-zinc-100 dark:border-zinc-900">
+          {/* ── ABOUT US ──────────────────────────────────── */}
+          <section id="about-us" className="py-16 scroll-mt-16 border-t border-zinc-100 dark:border-zinc-900">
             <div className="rounded-2xl border border-zinc-200 bg-white p-7 sm:p-10 dark:border-zinc-800 dark:bg-zinc-900">
               <div className="mb-8">
-                <p className="text-sm font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">Why MediKiosk</p>
+                <p className="text-sm font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">About Us</p>
                 <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  From waiting-room paperwork to structured digital intake.
+                  About MediKiosk · Hospital First-Mile Platform
                 </h2>
                 <p className="mt-3 text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-2xl">
-                  MediKiosk replaces fragmented OPD workflows with a structured, multilingual digital process — from first contact to consultation.
+                  MediKiosk replaces fragmented OPD workflows with a structured, multilingual digital process — connecting patients directly to the right department and doctor before consultation begins.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -705,25 +722,27 @@ export default function LandingPage() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {/* Patient Basic */}
+              {/* Tier 1: FREE / DEMO */}
               <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/50 p-6 flex flex-col justify-between dark:border-emerald-500/30 dark:bg-emerald-950/20">
                 <div>
                   <span className="inline-flex rounded-md bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 mb-3">
-                    Patient Open Access
+                    Open / Demo Access
                   </span>
-                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Basic Kiosk Use</h3>
+                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Free / Demo</h3>
                   <div className="mt-4 flex items-baseline gap-1">
                     <span className="text-4xl font-extrabold text-zinc-900 dark:text-zinc-50">₹0</span>
-                    <span className="text-sm font-semibold text-zinc-500">/ always free</span>
+                    <span className="text-sm font-semibold text-zinc-500">/ free for patients</span>
                   </div>
                   <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-                    Free for patients at hospital kiosk terminals.
+                    Basic kiosk intake and demo testing.
                   </p>
                   <ul className="mt-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Multilingual intake</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Voice symptom recording</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Document OCR scanning</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Live OPD token status</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> 1 Kiosk terminal</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Basic patient registration</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Problem selection & triage</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Location-based routing</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Doctor discovery</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Basic OPD queue token</li>
                   </ul>
                 </div>
                 <div className="mt-8">
@@ -732,89 +751,93 @@ export default function LandingPage() {
                     onClick={handlePatientStart}
                     className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-500 dark:bg-emerald-500 dark:text-zinc-950"
                   >
-                    Start Patient Intake
+                    Try Patient Kiosk
                   </button>
                 </div>
               </div>
 
-              {/* Community Hospital */}
+              {/* Tier 2: STARTER */}
               <div className="rounded-2xl border border-zinc-200 bg-white p-6 flex flex-col justify-between dark:border-zinc-800 dark:bg-zinc-900">
                 <div>
                   <span className="inline-flex rounded-md bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-3">
-                    Clinic / Nursing Home
+                    Small Clinics & OPDs
                   </span>
-                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Community OPD</h3>
+                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Starter</h3>
                   <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">₹4,999</span>
-                    <span className="text-sm font-semibold text-zinc-500">/ mo (Demo)</span>
+                    <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">₹1,499</span>
+                    <span className="text-sm font-semibold text-zinc-500">/ mo (Proposed)</span>
                   </div>
                   <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-                    Ideal for standalone clinics up to 3 doctor rooms.
+                    Low-cost deployment for standalone clinics.
                   </p>
                   <ul className="mt-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
                     <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> 1-2 Kiosk Terminals</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Up to 5 Doctor Logins</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Real-time Queue Socket</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Standard Email Support</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Patient registration flow</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Doctor & queue management</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Structured patient history</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Document & OCR scanning</li>
                   </ul>
                 </div>
                 <div className="mt-8">
-                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed B2B tier</span>
+                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed / Demo Pricing</span>
                 </div>
               </div>
 
-              {/* Multi-Specialty Hospital */}
+              {/* Tier 3: HOSPITAL */}
               <div className="relative rounded-2xl border-2 border-zinc-900 bg-white p-6 flex flex-col justify-between dark:border-zinc-100 dark:bg-zinc-900 shadow-md">
                 <span className="absolute -top-3 right-4 rounded-full bg-zinc-900 dark:bg-white px-3 py-0.5 text-xs font-bold text-white dark:text-zinc-950">
                   Popular
                 </span>
                 <div>
                   <span className="inline-flex rounded-md bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-3">
-                    Multi-Specialty
+                    Medium / Large Hospitals
                   </span>
-                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Hospital Campus</h3>
+                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Hospital</h3>
                   <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">₹14,999</span>
-                    <span className="text-sm font-semibold text-zinc-500">/ mo (Demo)</span>
+                    <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">₹4,999</span>
+                    <span className="text-sm font-semibold text-zinc-500">/ mo (Proposed)</span>
                   </div>
                   <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-                    Full OPD wing with multi-department doctor routing.
+                    Multi-department OPD floor management.
                   </p>
                   <ul className="mt-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Up to 10 Kiosks</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Unlimited Doctor Portals</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Hospital Admin Dashboard</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Medical Timeline Storage</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Multiple Kiosks support</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> All OPD departments</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Doctor dashboard & timeline</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Patient records & audit log</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Hospital analytics & status</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Maintenance & support</li>
                   </ul>
                 </div>
                 <div className="mt-8">
-                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed B2B tier</span>
+                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed / Demo Pricing</span>
                 </div>
               </div>
 
-              {/* Enterprise Network */}
+              {/* Tier 4: ENTERPRISE */}
               <div className="rounded-2xl border border-zinc-200 bg-white p-6 flex flex-col justify-between dark:border-zinc-800 dark:bg-zinc-900">
                 <div>
                   <span className="inline-flex rounded-md bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-3">
-                    Healthcare Network
+                    Hospital Chains & Networks
                   </span>
-                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Enterprise Chain</h3>
+                  <h3 className="font-display text-2xl font-bold text-zinc-900 dark:text-zinc-50">Enterprise</h3>
                   <div className="mt-4 flex items-baseline gap-1">
                     <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">Custom</span>
-                    <span className="text-sm font-semibold text-zinc-500">/ SLA (Demo)</span>
+                    <span className="text-sm font-semibold text-zinc-500">/ SLA (Proposed)</span>
                   </div>
                   <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-                    Government or private multi-facility networks.
+                    Chains with multiple facilities & branches.
                   </p>
                   <ul className="mt-6 space-y-2.5 text-sm text-zinc-700 dark:text-zinc-300">
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Multi-location kiosk sync</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> On-prem / Hybrid Deploy</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Dedicated 24/7 SLA</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Hardware Maintenance</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Multiple hospital locations</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Fleet-wide kiosk sync</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Custom EHR/HIS integrations</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> Dedicated SLA support</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-zinc-500" /> On-site hardware maintenance</li>
                   </ul>
                 </div>
                 <div className="mt-8">
-                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed B2B tier</span>
+                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed / Demo Pricing</span>
                 </div>
               </div>
             </div>
@@ -860,6 +883,53 @@ export default function LandingPage() {
                 <ShieldCheck className="h-4 w-4 text-zinc-400 dark:text-zinc-600 shrink-0" />
                 Clinical and operational screens remain protected from public kiosk users.
               </p>
+            </div>
+          </section>
+
+          {/* ── SUPPORT ────────────────────────────────────── */}
+          <section id="support" className="py-16 scroll-mt-16 border-t border-zinc-100 dark:border-zinc-900">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-7 sm:p-10 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="mb-8">
+                <p className="text-sm font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">Assistance & Help</p>
+                <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  MediKiosk Support & Assistance
+                </h2>
+                <p className="mt-3 text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-2xl">
+                  Need assistance with your OPD token, multilingual voice input, or kiosk terminal? Hospital support staff and telemetry are available 24/7.
+                </p>
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-3">
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-5 dark:border-zinc-700/70 dark:bg-zinc-800/40">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 mb-4">
+                    <Phone className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-50">OPD Helpdesk Counter</h3>
+                  <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                    Ground floor main reception & OPD kiosk desk. Staff extension 1042 available during clinic hours.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-5 dark:border-zinc-700/70 dark:bg-zinc-800/40">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400 mb-4">
+                    <Mic className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-50">Multilingual Voice Support</h3>
+                  <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                    Supports speaking chief complaints in English, Hindi, Bengali, Marathi, Tamil, and Telugu.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-5 dark:border-zinc-700/70 dark:bg-zinc-800/40">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 mb-4">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-50">Kiosk Privacy & Telemetry</h3>
+                  <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                    Automated idle timeout clears screens for public corridor privacy; 24/7 hardware telemetry active.
+                  </p>
+                </div>
+              </div>
             </div>
           </section>
 

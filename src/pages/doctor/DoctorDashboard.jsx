@@ -16,10 +16,12 @@ import {
   startConsultation,
 } from "@/services/queueService";
 import { currentStaff } from "@/services/authService";
+import { getDoctorRecords } from "@/services/chartService";
 import { errorMessage } from "@/services/apiClient";
 import { useDoctorQueueSocket } from "@/hooks/useQueueSocket";
 import { qk } from "@/lib/queryClient";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { DoctorRecordsSection } from "@/components/doctor/DoctorRecordsSection";
 
 import {
   AlertTriangle, ArrowUpRight, CheckCircle2, ClipboardCheck,
@@ -65,8 +67,23 @@ export default function DoctorDashboard() {
     refetchInterval: 20_000,
   });
 
+  const [recordsTimeframe, setRecordsTimeframe] = useState("all");
+  const [recordsCategory, setRecordsCategory] = useState("all");
+
+  const {
+    data: recordsData,
+    isLoading: recordsLoading,
+    refetch: refetchRecords,
+  } = useQuery({
+    queryKey: ["doctorRecords", doctorId, recordsTimeframe, recordsCategory],
+    queryFn: () => getDoctorRecords({ doctorId, timeframe: recordsTimeframe, category: recordsCategory }),
+    enabled: Boolean(doctorId),
+    staleTime: 10_000,
+  });
+
   const invalidate = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["queue"] });
+    void queryClient.invalidateQueries({ queryKey: ["doctorRecords"] });
   }, [queryClient]);
 
   useDoctorQueueSocket(doctorId, invalidate);
@@ -172,8 +189,11 @@ export default function DoctorDashboard() {
             <Button
               variant="secondary"
               size="md"
-              onClick={() => void refetch()}
-              icon={<RefreshCw className={isFetching ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />}
+              onClick={() => {
+                void refetch();
+                void refetchRecords();
+              }}
+              icon={<RefreshCw className={isFetching || recordsLoading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />}
             >
               Refresh
             </Button>
@@ -529,7 +549,18 @@ export default function DoctorDashboard() {
 ))}
             </ul>
           </Card>
-)}
+        )}
+
+        {/* Doctor Records Section — Real Consultations, Documents, Queue & Revenue */}
+        <DoctorRecordsSection
+          records={recordsData}
+          loading={recordsLoading}
+          timeframe={recordsTimeframe}
+          setTimeframe={setRecordsTimeframe}
+          category={recordsCategory}
+          setCategory={setRecordsCategory}
+          onRefresh={() => void refetchRecords()}
+        />
       </div>
 
       <ConfirmDialog

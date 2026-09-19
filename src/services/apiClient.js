@@ -138,24 +138,59 @@ export async function request(path, options = {}) {
       message = err;
     } else if (err && typeof err === "object") {
       message = err.message ?? envelope?.message ?? message;
-      code = err.code ?? code;
+      code = err.code ?? envelope?.code ?? code;
       details = err.details;
     } else if (envelope?.message) {
       message = envelope.message;
+      code = envelope.code ?? code;
     } else if (response.status === 401) {
       message = "Invalid username/email or password.";
     } else if (response.status === 403) {
       message = "You do not have permission to perform this action.";
     } else if (response.status === 404) {
       message = "API endpoint not found.";
+    } else if (response.status === 502 || response.status === 503 || response.status === 504) {
+      message = "Server is starting. Please wait a moment...";
+      code = "SERVER_STARTING";
     } else if (response.status >= 500) {
-      message = "Server error. Please try again shortly.";
+      message =
+        import.meta?.env?.DEV && !envelope?.message
+          ? "Backend server is not reachable on port 4000. Please ensure the API is running."
+          : (envelope?.message || "Server error. Please try again shortly.");
+      code = "SERVER_ERROR";
     }
 
     throw new ApiError(response.status, code, message, details);
   }
 
   return envelope?.data ?? null;
+}
+
+/** Lightweight health check against GET /api/health (safe, non-hammering) */
+export async function checkHealth(timeoutMs = 6000) {
+  const base = getBaseUrl();
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${base}/health`, {
+      method: "GET",
+      signal: controller.signal,
+    });
+    window.clearTimeout(timer);
+    if (!res.ok) {
+      return { ok: false, status: res.status, message: "Server starting" };
+    }
+    const data = await res.json().catch(() => null);
+    return {
+      ok: true,
+      status: res.status,
+      database: data?.database ?? "connected",
+      service: data?.service ?? "medikiosk-api",
+    };
+  } catch (err) {
+    window.clearTimeout(timer);
+    return { ok: false, status: 0, message: err?.message || "Cannot reach server" };
+  }
 }
 
 export const api = {
@@ -170,5 +205,6 @@ export const api = {
 export function errorMessage(err) {
   if (err instanceof ApiError) return err.message;
   if (err instanceof Error) return err.message;
-  return "Something went wrong. Please try again.";
+  if (typeof err === "string") return err;
+  return "The request could not be completed. Please try again.";
 }

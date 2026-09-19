@@ -35,6 +35,30 @@ describe("registration", () => {
     expect(row.mobileHash).toHaveLength(64);
     expect(row.mobileLast4).toBe("2345");
   });
+
+  it("handles duplicate submissions idempotently within the same session window", async () => {
+    const mobile = "9876599999";
+    const payload = { name: "Idempotent Patient", age: 29, sex: "M", mobile, consent: true };
+    const res1 = await api().post("/api/sessions").send(payload);
+    const res2 = await api().post("/api/sessions").send(payload);
+
+    expect(res1.status).toBe(201);
+    expect(res2.status).toBe(201);
+    expect(res2.body.data.sessionId).toBe(res1.body.data.sessionId);
+    await cleanupSessions(["Idempotent Patient"]);
+  });
+});
+
+describe("health checks", () => {
+  it("responds with safe status on GET /api/health and /health", async () => {
+    const res1 = await api().get("/api/health");
+    expect(res1.status).toBe(200);
+    expect(res1.body).toMatchObject({ status: "ok", service: "medikiosk-api", database: "connected" });
+
+    const res2 = await api().get("/health");
+    expect(res2.status).toBe(200);
+    expect(res2.body).toMatchObject({ status: "ok", service: "medikiosk-api", database: "connected" });
+  });
 });
 
 describe("history interview", () => {

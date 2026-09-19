@@ -18,7 +18,22 @@ export default function RegistrationPage() {
   const [mobile, setMobile] = useState("");
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("F");
+  const [submitStatus, setSubmitStatus] = useState("idle"); // 'idle' | 'registering' | 'connecting' | 'waking'
   const [errors, setErrors] = useState({});
+
+  const isTransientError = (err) => {
+    if (!err) return false;
+    if (err instanceof ApiError) {
+      return (
+        err.status >= 500 ||
+        err.code === "SERVER_ERROR" ||
+        err.code === "DATABASE_UNAVAILABLE" ||
+        err.code === "SERVER_STARTING" ||
+        err.code === "NETWORK_ERROR"
+      );
+    }
+    return false;
+  };
 
   const handleSubmit = async () => {
     if (submitting) return;
@@ -34,9 +49,42 @@ export default function RegistrationPage() {
     if (Object.keys(next).length) return;
 
     setSubmitting(true);
+    setSubmitStatus("registering");
+
+    const payload = { name: name.trim(), age: n, sex, mobile, language: language.code };
+
     try {
-      await registerPatient({ name: name.trim(), age: n, sex, mobile, language: language.code });
-      navigate("/patient/history");
+      try {
+        await registerPatient(payload);
+        navigate("/patient/history");
+        return;
+      } catch (firstErr) {
+        if (!isTransientError(firstErr)) {
+          throw firstErr;
+        }
+
+        // Attempt 2: server is waking up on Render
+        setSubmitStatus("connecting");
+        await new Promise((r) => setTimeout(r, 2500));
+
+        try {
+          await registerPatient(payload);
+          navigate("/patient/history");
+          return;
+        } catch (secondErr) {
+          if (!isTransientError(secondErr)) {
+            throw secondErr;
+          }
+
+          // Attempt 3: longer backoff
+          setSubmitStatus("waking");
+          await new Promise((r) => setTimeout(r, 5000));
+
+          await registerPatient(payload);
+          navigate("/patient/history");
+          return;
+        }
+      }
     } catch (err) {
       // Surface server field errors on the matching inputs.
       if (err instanceof ApiError && err.details?.length) {
@@ -46,6 +94,7 @@ export default function RegistrationPage() {
       toast(errorMessage(err), { tone: "flag" });
     } finally {
       setSubmitting(false);
+      setSubmitStatus("idle");
     }
   };
 
@@ -130,7 +179,15 @@ export default function RegistrationPage() {
           aria-busy={submitting}
           className="w-full inline-flex items-center justify-center gap-3 rounded-[14px] bg-emerald-600 px-8 py-4 text-lg font-extrabold text-white shadow-xl shadow-emerald-600/30 transition-all duration-150 hover:bg-emerald-500 active:scale-95 active:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 disabled:active:scale-100 dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400"
         >
-          <span>{submitting ? "Saving…" : t("reg.continue")}</span>
+          <span>
+            {submitStatus === "connecting"
+              ? "Connecting to server..."
+              : submitStatus === "waking"
+              ? "Server is starting. Please wait..."
+              : submitStatus === "registering"
+              ? "Registering..."
+              : t("reg.continue")}
+          </span>
           {submitting ? (
             <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden="true" />
 ) : (

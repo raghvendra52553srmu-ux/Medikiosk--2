@@ -2,8 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { ArrowUpRight, Stethoscope, User, Building2, Lock, Landmark, HeartHandshake, Mic, Ticket, Sparkles, CheckCircle2 } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import { LanguageSelector } from "@/components/layout/LanguageSelector";
+import { AccessibilityToolbar } from "@/components/layout/AccessibilityToolbar";
 
 const NAV_ROLES = [
   {
@@ -77,8 +76,19 @@ export default function RoleSelect() {
   return (
     <div className="app-ambient min-h-full flex flex-col">
       {/* 1. FIXED TOP NAVIGATION BAR */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/90 backdrop-blur-2xl saturate-150 dark:border-zinc-800 dark:bg-zinc-950/90 shadow-xs">
-        <div className="mx-auto flex h-[64px] max-w-[1400px] items-center justify-between gap-3 px-4 sm:px-6">
+      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/95 backdrop-blur-2xl saturate-150 dark:border-zinc-800 dark:bg-zinc-950/95 shadow-xs">
+        {/* Top Accessibility Strip */}
+        <div className="border-b border-zinc-200/80 bg-zinc-50/95 dark:border-zinc-800/80 dark:bg-zinc-900/80 py-1 px-4 sm:px-6">
+          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>National Health Portal · MediKiosk Role Access</span>
+            </div>
+            <AccessibilityToolbar variant="strip" />
+          </div>
+        </div>
+
+        <div className="mx-auto flex h-[60px] max-w-[1400px] items-center justify-between gap-3 px-4 sm:px-6">
           {/* Logo / Brand Name */}
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-emerald-600 font-display text-base font-bold text-white shadow-sm dark:bg-emerald-500 dark:text-zinc-950">
@@ -108,20 +118,14 @@ export default function RoleSelect() {
                   r.role === "patient"
                     ? "bg-emerald-600 text-white dark:bg-emerald-500 dark:text-zinc-950 ring-2 ring-emerald-500/40"
                     : "text-zinc-800 hover:bg-zinc-200/80 hover:text-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-white"
-)}
+                )}
               >
                 <r.icon className="h-3.5 w-3.5 shrink-0" />
                 <span className="capitalize">{t(r.titleKey)}</span>
                 {r.locked && <Lock className="h-3 w-3 opacity-70" />}
               </button>
-))}
+            ))}
           </nav>
-
-          {/* Right Controls: Manual Language Selector & Day/Night Mode */}
-          <div className="flex items-center gap-2">
-            <LanguageSelector />
-            <ThemeToggle />
-          </div>
         </div>
       </header>
 

@@ -4,8 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { HelpPanel, SessionWatch } from "@/components/kiosk/KioskSupport";
 import { readFacilitySession } from "@/services/hospitalService";
-import { LanguageSelector } from "@/components/layout/LanguageSelector";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { AccessibilityToolbar } from "@/components/layout/AccessibilityToolbar";
 import { cn } from "@/utils/cn";
 
 export const KIOSK_STEPS = [
@@ -52,7 +51,18 @@ export function KioskLayout({
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       <header className="sticky top-0 z-30 border-b border-line bg-white/65 dark:bg-zinc-950/80 backdrop-blur-2xl saturate-150">
-        <div className="mx-auto flex h-[60px] max-w-[1400px] items-center justify-between gap-2 px-4 sm:px-6">
+        {/* Top Accessibility Strip above navbar */}
+        <div className="border-b border-line/60 bg-zinc-50/90 dark:bg-zinc-900/70 py-1 px-4 sm:px-6">
+          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink/50">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>OPD Patient Kiosk · Assisted Registration</span>
+            </div>
+            <AccessibilityToolbar variant="strip" />
+          </div>
+        </div>
+
+        <div className="mx-auto flex h-[56px] max-w-[1400px] items-center justify-between gap-2 px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             {showBack && !isEntry && (
               <button
@@ -61,13 +71,13 @@ export function KioskLayout({
                   "group -ml-1 flex h-10 items-center gap-1.5 rounded-[10px] px-2.5 text-base text-ink/65",
                   "transition-all duration-[320ms] [transition-timing-function:var(--ease-glide)]",
                   "hover:bg-ink/[0.06] hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
-)}
+                )}
                 aria-label={t("kiosk.back")}
               >
                 <ArrowLeft className="h-[18px] w-[18px] transition-transform duration-[320ms] [transition-timing-function:var(--ease-glide)] group-hover:-translate-x-0.5" />
                 <span className="hidden sm:inline">{t("kiosk.back")}</span>
               </button>
-)}
+            )}
             <button
               onClick={() => navigate("/patient")}
               className="flex min-w-0 items-center gap-2.5 rounded-lg pl-0.5 text-left"
@@ -87,10 +97,8 @@ export function KioskLayout({
             </button>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {aside}
-            <LanguageSelector variant="compact" />
-            <ThemeToggle />
             <button
               onClick={() => setHelpOpen(true)}
               className="flex h-10 items-center gap-1.5 rounded-[10px] border border-line bg-white/60 dark:bg-white/[0.06] px-3 text-base font-medium text-ink/75 dark:text-zinc-300 backdrop-blur transition-all duration-[320ms] [transition-timing-function:var(--ease-glide)] hover:border-white hover:bg-white hover:text-ink dark:hover:bg-white/10 dark:hover:text-white"
