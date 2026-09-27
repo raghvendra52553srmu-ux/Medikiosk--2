@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: medikiosk
+    runtime: node
+    plan: free
+    buildCommand: npm run render:build
+    startCommand: npm run render:start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: SESSION_TTL_HOURS
+        value: 12
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: CORS_ORIGIN
+        value: "https://medikiosk-2.vercel.app,http://localhost:5173"

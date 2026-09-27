@@ -63,6 +63,19 @@ export function StaffGate({
   }, [checking, unlocked]);
 
   const meta = STAFF_LABELS[role];
+  const [submitLabel, setSubmitLabel] = useState("Sign in");
+
+  const isTransient = (msg) => {
+    if (!msg) return false;
+    const lower = msg.toLowerCase();
+    return (
+      lower.includes("starting") ||
+      lower.includes("server error") ||
+      lower.includes("temporarily unavailable") ||
+      lower.includes("cannot reach") ||
+      lower.includes("network")
+    );
+  };
 
   const submit = async (e) => {
     e?.preventDefault();
@@ -70,22 +83,35 @@ export function StaffGate({
 
     setSubmitting(true);
     setError("");
-    const result = await loginStaff(role, identifier, password);
-    setSubmitting(false);
+    setSubmitLabel("Signing in…");
 
-    if (result.ok) {
-      setUser(result.user);
-      setRole(role);
-      setIdentifier("");
-      setPassword("");
-      return;
+    try {
+      let result = await loginStaff(role, identifier, password);
+
+      // Attempt 2: if transient server error (cold start / waking up on Render)
+      if (!result.ok && isTransient(result.message)) {
+        setSubmitLabel("Server is waking up… retrying");
+        await new Promise((r) => setTimeout(r, 2200));
+        result = await loginStaff(role, identifier, password);
+      }
+
+      if (result.ok) {
+        setUser(result.user);
+        setRole(role);
+        setIdentifier("");
+        setPassword("");
+        return;
+      }
+
+      setError(result.message);
+      setShaking(true);
+      setPassword(""); // never leave a failed password in the field
+      identifierRef.current?.focus();
+      window.setTimeout(() => setShaking(false), 420);
+    } finally {
+      setSubmitting(false);
+      setSubmitLabel("Sign in");
     }
-
-    setError(result.message);
-    setShaking(true);
-    setPassword(""); // never leave a failed password in the field
-    identifierRef.current?.focus();
-    window.setTimeout(() => setShaking(false), 420);
   };
 
   // Verifying the cookie — avoid flashing the sign-in form at an already-signed-in clinician.
@@ -181,11 +207,29 @@ export function StaffGate({
             </button>
           </div>
 
+          {/* Quick Demo Credentials Auto-Fill */}
+          <div className="flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-xs font-medium text-emerald-800 dark:text-emerald-300">
+            <span>
+              Demo: <strong className="font-mono">{role === "doctor" ? "doctor" : "admin"}</strong> / <strong className="font-mono">{role === "doctor" ? "Doctor@123" : "Admin@123"}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setIdentifier(role === "doctor" ? "doctor" : "admin");
+                setPassword(role === "doctor" ? "Doctor@123" : "Admin@123");
+                setError("");
+              }}
+              className="font-bold underline decoration-emerald-500/50 hover:text-emerald-950 dark:hover:text-emerald-100 cursor-pointer ml-2"
+            >
+              Fill Demo
+            </button>
+          </div>
+
           {error && (
             <p className="mt-2 text-base font-medium text-red-600 dark:text-red-400" role="alert">
               {error}
             </p>
-)}
+          )}
 
           <Button
             type="submit"
@@ -194,7 +238,7 @@ export function StaffGate({
             className="mt-6"
             disabled={!identifier.trim() || !password || submitting}
           >
-            {submitting ? "Signing in…" : "Sign in"}
+            {submitLabel}
           </Button>
         </form>
 

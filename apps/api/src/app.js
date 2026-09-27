@@ -2,6 +2,8 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path";
+import fs from "fs";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import routes from "./routes/index.js";
@@ -105,6 +107,26 @@ export function createApp() {
 
   app.use("/api", routes);
   app.use("/auth", authRoutes);
+
+  // In production (e.g. Render Web Service), serve the built Vite SPA from dist/
+  const distPath = path.resolve(process.cwd(), "dist");
+  const fallbackDistPath = path.resolve(process.cwd(), "../../dist");
+  const finalDist = fs.existsSync(distPath) ? distPath : (fs.existsSync(fallbackDistPath) ? fallbackDistPath : null);
+
+  if (finalDist) {
+    app.use(express.static(finalDist));
+    app.get("*", (req, res, next) => {
+      if (
+        req.path.startsWith("/api") ||
+        req.path.startsWith("/auth") ||
+        req.path.startsWith("/health") ||
+        req.path.startsWith("/socket.io")
+      ) {
+        return next();
+      }
+      res.sendFile(path.join(finalDist, "index.html"));
+    });
+  }
 
   app.use(notFoundHandler);
   app.use(errorHandler);

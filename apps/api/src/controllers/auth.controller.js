@@ -48,7 +48,11 @@ export async function login(req, res) {
   });
   setAuthCookie(res, token);
 
-  await prisma.staffUser.update({ where: { id: staff.id }, data: { lastLoginAt: new Date() } });
+  try {
+    await prisma.staffUser.update({ where: { id: staff.id }, data: { lastLoginAt: new Date() } });
+  } catch (updateErr) {
+    console.warn("[login] Non-fatal lastLoginAt update warning:", updateErr?.message || updateErr);
+  }
   await recordAudit({
     actorType: ActorType.STAFF,
     staffId: staff.id,

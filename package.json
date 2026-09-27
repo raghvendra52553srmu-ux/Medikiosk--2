@@ -9,7 +9,10 @@
     "dev:server": "npm --prefix apps/api run dev",
     "build": "vite build",
     "preview": "vite preview",
-    "build:kiosk": "vite build --mode kiosk"
+    "build:kiosk": "vite build --mode kiosk",
+    "render:build": "npm install && npm run build && cd apps/api && npm install && npx prisma generate",
+    "render:start": "cd apps/api && node src/server.js",
+    "start": "cd apps/api && node src/server.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",
