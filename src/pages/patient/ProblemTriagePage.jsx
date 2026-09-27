@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/Input";
 import { useApp } from "@/context/AppContext";
 import { saveClinic } from "@/services/patientService";
 import { speechSupported, startListening, } from "@/utils/speech";
-import { Activity, ArrowRight, CheckCircle2, Heart, Mic, Sparkles, Square, Stethoscope, Thermometer, Baby, Eye, Bone, Pill, Brain } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle2, Heart, Mic, Sparkles, Square, Stethoscope, Thermometer, Baby, Eye, Bone, Pill, Brain, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 
@@ -151,6 +151,7 @@ export default function ProblemTriagePage() {
   const [problemText, setProblemText] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("chest_pain");
   const [isListening, setIsListening] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [speechStatus, setSpeechStatus] = useState("");
   const [speechError, setSpeechError] = useState("");
   const sessionRef = useRef(null);
@@ -220,10 +221,13 @@ export default function ProblemTriagePage() {
   }, [problemText, selectedPresetId]);
 
   const handleToggleVoice = async () => {
+    if (isProcessing) return;
+
     if (isListening) {
       sessionRef.current?.stop();
       setIsListening(false);
-      setSpeechStatus("Stopped recording.");
+      setIsProcessing(true);
+      setSpeechStatus("⏳ AI is transcribing your voice... Please wait.");
       return;
     }
 
@@ -235,6 +239,7 @@ export default function ProblemTriagePage() {
     setSpeechError("");
     setSpeechStatus("🎙️ Listening... Please speak your symptoms now.");
     setIsListening(true);
+    setIsProcessing(false);
     setSelectedPresetId(null);
 
     try {
@@ -248,8 +253,10 @@ export default function ProblemTriagePage() {
           setSpeechStatus(statusMsg);
         },
         onInterim: liveText => {
-          setProblemText(liveText);
-          setSelectedPresetId(null);
+          if (liveText && !liveText.startsWith("⏳")) {
+            setProblemText(liveText);
+            setSelectedPresetId(null);
+          }
         },
       });
 
@@ -257,6 +264,7 @@ export default function ProblemTriagePage() {
       const result = await done;
       sessionRef.current = null;
       setIsListening(false);
+      setIsProcessing(false);
 
       if (result.ok && result.transcript.trim()) {
         const heard = result.transcript.trim();
@@ -270,6 +278,7 @@ export default function ProblemTriagePage() {
       }
     } catch (err) {
       setIsListening(false);
+      setIsProcessing(false);
       setSpeechError("Microphone connection failed. Please type your symptoms or choose from below.");
     }
   };
@@ -346,24 +355,32 @@ export default function ProblemTriagePage() {
           <button
             type="button"
             onClick={handleToggleVoice}
+            disabled={isProcessing}
             className={cn(
-              "inline-flex items-center gap-2.5 rounded-[12px] px-6 py-3 text-base md:text-lg font-extrabold shadow-md transition-all duration-150 active:scale-95 cursor-pointer",
-              isListening
+              "inline-flex items-center gap-2.5 rounded-[12px] px-6 py-3 text-base md:text-lg font-extrabold shadow-md transition-all duration-150 active:scale-95 cursor-pointer disabled:cursor-not-allowed",
+              isProcessing
+                ? "bg-amber-600 text-white cursor-wait opacity-95 shadow-amber-600/30"
+                : isListening
                 ? "bg-red-600 text-white animate-pulse shadow-red-600/30"
                 : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 dark:bg-emerald-500 dark:text-zinc-950"
-)}
+            )}
           >
-            {isListening ? (
+            {isProcessing ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Transcribing... (प्रतीक्षा करें)</span>
+              </>
+            ) : isListening ? (
               <>
                 <Square className="h-4 w-4 fill-current" />
                 <span>Stop Listening (रोकें)</span>
               </>
-) : (
+            ) : (
               <>
                 <Mic className="h-5 w-5" />
                 <span>Speak Into Mic (माइक में बोलें)</span>
               </>
-)}
+            )}
           </button>
 
           <p className="text-sm sm:text-base font-medium text-zinc-500 dark:text-zinc-400">
