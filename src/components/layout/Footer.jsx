@@ -27,7 +27,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="w-full bg-[#1b3f8b] text-white selection:bg-orange-500 selection:text-white">
+    <footer className="w-full bg-gradient-to-b from-[#064e3b] to-[#043d2e] text-white selection:bg-amber-500 selection:text-white border-t border-emerald-800/80">
       {/* Main Footer Container */}
       <div className="mx-auto max-w-[1400px] px-4 sm:px-8 lg:px-12 pt-12 sm:pt-14 pb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
@@ -42,7 +42,7 @@ export default function Footer() {
               <h4 className="text-base font-bold text-white tracking-wide mb-1">
                 Address
               </h4>
-              <p className="text-sm text-blue-100/95 leading-relaxed">
+              <p className="text-sm text-emerald-100/95 leading-relaxed">
                 MediKiosk Health Innovations<br />
                 9th Floor, Jeevan Bharati Tower,<br />
                 Connaught Place, New Delhi - 110 001
@@ -55,7 +55,7 @@ export default function Footer() {
               </h4>
               <a
                 href="tel:1800114477"
-                className="text-sm font-medium text-blue-100 hover:text-white transition-colors"
+                className="text-sm font-medium text-emerald-100 hover:text-white transition-colors"
               >
                 1800-11-4477
               </a>
@@ -67,7 +67,7 @@ export default function Footer() {
               </h4>
               <a
                 href="mailto:support@medikiosk.in"
-                className="text-sm font-medium text-blue-100 hover:text-white transition-colors"
+                className="text-sm font-medium text-emerald-100 hover:text-white transition-colors"
               >
                 support[at]medikiosk[dot]in
               </a>
@@ -139,9 +139,9 @@ export default function Footer() {
               Important Links
             </h3>
 
-            <ul className="space-y-3.5 text-sm sm:text-base text-blue-100">
+            <ul className="space-y-3.5 text-sm sm:text-base text-emerald-100">
               <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <span className="text-emerald-300 mt-1 text-sm font-bold">•</span>
                 <button
                   type="button"
                   onClick={handlePatientStart}
@@ -152,7 +152,7 @@ export default function Footer() {
               </li>
 
               <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <span className="text-emerald-300 mt-1 text-sm font-bold">•</span>
                 <button
                   type="button"
                   onClick={handlePatientStart}
@@ -163,7 +163,7 @@ export default function Footer() {
               </li>
 
               <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <span className="text-emerald-300 mt-1 text-sm font-bold">•</span>
                 <button
                   type="button"
                   onClick={handleDoctorStart}
@@ -174,7 +174,7 @@ export default function Footer() {
               </li>
 
               <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <span className="text-emerald-300 mt-1 text-sm font-bold">•</span>
                 <button
                   type="button"
                   onClick={handleAdminStart}
@@ -185,7 +185,7 @@ export default function Footer() {
               </li>
 
               <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <span className="text-emerald-300 mt-1 text-sm font-bold">•</span>
                 <button
                   type="button"
                   onClick={() => scrollToSection("pricing")}
@@ -203,9 +203,9 @@ export default function Footer() {
               Policies
             </h3>
 
-            <ul className="space-y-3.5 text-sm sm:text-base text-blue-100">
+            <ul className="space-y-3.5 text-sm sm:text-base text-emerald-100">
               <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <span className="text-emerald-300 mt-1 text-sm font-bold">•</span>
                 <a
                   href="#terms"
                   className="hover:text-white hover:underline transition-colors leading-snug"
@@ -215,7 +215,7 @@ export default function Footer() {
               </li>
 
               <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <span className="text-emerald-300 mt-1 text-sm font-bold">•</span>
                 <a
                   href="#privacy"
                   className="hover:text-white hover:underline transition-colors leading-snug"
@@ -225,7 +225,7 @@ export default function Footer() {
               </li>
 
               <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <span className="text-emerald-300 mt-1 text-sm font-bold">•</span>
                 <a
                   href="#queue-policy"
                   className="hover:text-white hover:underline transition-colors leading-snug"
@@ -235,7 +235,7 @@ export default function Footer() {
               </li>
 
               <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <span className="text-emerald-300 mt-1 text-sm font-bold">•</span>
                 <a
                   href="#security"
                   className="hover:text-white hover:underline transition-colors leading-snug"
@@ -252,7 +252,7 @@ export default function Footer() {
               MediKiosk App
             </h3>
 
-            <p className="text-sm sm:text-base text-blue-100/90 leading-snug">
+            <p className="text-sm sm:text-base text-emerald-100/90 leading-snug">
               Download the MediKiosk app{" "}
               <span className="italic font-light">(Bharat ka smart OPD partner)</span>
             </p>
@@ -289,7 +289,7 @@ export default function Footer() {
                   {/* Medical Cross + M letter */}
                   <rect x="57" y="50" width="6" height="20" rx="2" fill="white" />
                   <rect x="50" y="57" width="20" height="6" rx="2" fill="white" />
-                  <circle cx="60" cy="60" r="4.5" fill="#1b3f8b" />
+                  <circle cx="60" cy="60" r="4.5" fill="#064e3b" />
                   <text
                     x="60"
                     y="63.5"
@@ -309,7 +309,7 @@ export default function Footer() {
                 <p className="text-sm font-medium text-white leading-tight">
                   Scan with your phone camera to install.
                 </p>
-                <div className="h-1 w-12 rounded-full bg-orange-500" />
+                <div className="h-1 w-12 rounded-full bg-amber-400" />
               </div>
             </div>
 
@@ -320,7 +320,7 @@ export default function Footer() {
                 href="https://play.google.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl bg-[#112a61] hover:bg-[#0c1f4a] border border-blue-400/25 px-3 py-2 transition-all shadow-md active:scale-95"
+                className="flex items-center gap-2 rounded-xl bg-[#043d2e] hover:bg-[#02281e] border border-emerald-400/25 px-3 py-2 transition-all shadow-md active:scale-95"
               >
                 <svg className="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" fill="none">
                   <path d="M3.609 1.813A1.5 1.5 0 0 0 3 3.109v17.782a1.5 1.5 0 0 0 .609 1.296l10.222-10.187z" fill="#00C1A6"/>
@@ -329,7 +329,7 @@ export default function Footer() {
                   <path d="M21.218 10.518l-3.785-2.12-3.602 3.602 3.602 3.602 3.785-2.12c1.042-.584 1.042-2.38 0-2.964z" fill="#FFD000"/>
                 </svg>
                 <div className="text-left">
-                  <p className="text-[9px] uppercase font-bold tracking-wider text-blue-200 leading-none">GET IT ON</p>
+                  <p className="text-[9px] uppercase font-bold tracking-wider text-emerald-200 leading-none">GET IT ON</p>
                   <p className="text-xs sm:text-sm font-semibold text-white leading-tight">Google Play</p>
                 </div>
               </a>
@@ -339,13 +339,13 @@ export default function Footer() {
                 href="https://apps.apple.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl bg-[#112a61] hover:bg-[#0c1f4a] border border-blue-400/25 px-3 py-2 transition-all shadow-md active:scale-95"
+                className="flex items-center gap-2 rounded-xl bg-[#043d2e] hover:bg-[#02281e] border border-emerald-400/25 px-3 py-2 transition-all shadow-md active:scale-95"
               >
                 <svg className="h-4.5 w-4.5 shrink-0 fill-current text-white" viewBox="0 0 24 24">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 0.92-2.87-.93.04-2.02.63-2.65 1.37-.56.64-1.04 1.71-.92 2.74 1.05.08 2.06-.52 2.65-1.24z" />
                 </svg>
                 <div className="text-left">
-                  <p className="text-[9px] uppercase font-bold tracking-wider text-blue-200 leading-none">Download on the</p>
+                  <p className="text-[9px] uppercase font-bold tracking-wider text-emerald-200 leading-none">Download on the</p>
                   <p className="text-xs sm:text-sm font-semibold text-white leading-tight">App Store</p>
                 </div>
               </a>
@@ -355,11 +355,11 @@ export default function Footer() {
         </div>
 
         {/* Bottom copyright / compliance strip */}
-        <div className="mt-14 pt-8 border-t border-blue-700/60 flex flex-col md:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-blue-200/80">
+        <div className="mt-14 pt-8 border-t border-emerald-800/60 flex flex-col md:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-emerald-200/80">
           <p className="text-center md:text-left">
             © {new Date().getFullYear()} MediKiosk · Smart OPD Intake & Hospital Management System.
           </p>
-          <p className="text-center md:text-right text-blue-300">
+          <p className="text-center md:text-right text-emerald-300">
             HL7/FHIR Standardized · DISHA & ISO 27001 Compliant · All Rights Reserved.
           </p>
         </div>
