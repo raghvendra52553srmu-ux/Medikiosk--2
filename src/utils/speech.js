@@ -1,10 +1,11 @@
 /**
- * Speech Recognition powered by AssemblyAI
+ * Speech Recognition powered by AssemblyAI & WebSpeech
  * API Key: 725148352e8d4e57acc655f894894636
  *
- * Uses AssemblyAI's state-of-the-art multilingual Speech-to-Text model
- * to accurately transcribe exactly what the patient speaks ("jise jo bole vahi uthaye").
- * Also provides real-time interim display and resilient local fallback.
+ * Dual-engine voice recognition:
+ * 1. Live real-time speech preview via browser engine (instant feedback)
+ * 2. High-accuracy multilingual AI transcription via AssemblyAI ("jise jo bole vahi uthaye")
+ * 3. Resilient fallback so speech is NEVER lost.
  */
 
 import { transcribeAudioWithAssemblyAI } from "@/services/assemblyAiService";
@@ -21,7 +22,7 @@ export function speechSupported() {
   return getCtor() !== null;
 }
 
-/** Map our language codes to BCP-47 tags for live preview. */
+/** Map language code to BCP-47 tags for speech engines. */
 export function speechLang(code) {
   const map = {
     en: "en-IN",
@@ -61,7 +62,6 @@ export function startListening(opts = {}) {
     const finish = (r) => {
       if (settled) return;
       settled = true;
-      // Stop media tracks
       if (mediaStream) {
         try {
           mediaStream.getTracks().forEach((track) => track.stop());
@@ -73,8 +73,14 @@ export function startListening(opts = {}) {
     // 1. Request microphone access for AssemblyAI recording
     try {
       if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+
         // Pick best supported MIME type
         const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
           ? "audio/webm;codecs=opus"
@@ -108,24 +114,37 @@ export function startListening(opts = {}) {
         let interim = "";
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
           const piece = ev.results[i][0].transcript;
-          if (ev.results[i].isFinal) browserFinalText += piece;
-          else interim += piece;
+          if (ev.results[i].isFinal) {
+            browserFinalText = (browserFinalText ? browserFinalText + " " : "") + piece.trim();
+          } else {
+            interim = (interim ? interim + " " : "") + piece.trim();
+          }
         }
-        const live = (browserFinalText + interim).trim();
+        const live = (browserFinalText + (interim ? " " + interim : "")).trim();
         if (live) opts.onInterim?.(live);
       };
 
       rec.onerror = (ev) => {
         const code = ev.error;
-        if (code === "aborted" || code === "no-speech") {
-          return;
+        if (code === "aborted" || code === "no-speech") return;
+        console.warn("[speech] WebSpeech event error:", code);
+      };
+
+      rec.onend = () => {
+        // Auto-stop media recorder if speech pauses
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+          try {
+            mediaRecorder.requestData();
+            mediaRecorder.stop();
+          } catch {}
         }
-        console.warn("[speech] WebSpeech error:", code);
       };
 
       try {
         rec.start();
-      } catch {}
+      } catch (err) {
+        console.warn("[speech] WebSpeech start error:", err);
+      }
     }
 
     // 3. Transcription processor when recording finishes
@@ -137,9 +156,9 @@ export function startListening(opts = {}) {
       }
 
       // Try AssemblyAI first if audio was recorded
-      if (audioBlob && audioBlob.size > 1500 && !userStopped) {
+      if (audioBlob && audioBlob.size > 1000 && !userStopped) {
         try {
-          opts.onInterim?.("⏳ Transcribing with AssemblyAI...");
+          opts.onStatus?.("⏳ Transcribing audio with AssemblyAI...");
           const assemblyText = await transcribeAudioWithAssemblyAI(
             audioBlob,
             opts.lang || "hi"
@@ -164,7 +183,7 @@ export function startListening(opts = {}) {
       }
 
       // Fallback to browser transcribed text if AssemblyAI was skipped or failed
-      const text = browserFinalText.trim();
+      const text = (browserFinalText || "").trim();
       if (text) {
         finish({ ok: true, transcript: text, engine: "webspeech" });
       } else if (!settled) {
@@ -201,6 +220,9 @@ export function startListening(opts = {}) {
       } catch {}
       try {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
+          try {
+            mediaRecorder.requestData();
+          } catch {}
           mediaRecorder.stop();
         }
       } catch {}

@@ -244,6 +244,9 @@ export default function ProblemTriagePage() {
           setIsListening(true);
           setSpeechStatus("🎙️ Listening in your language... Speak clearly.");
         },
+        onStatus: (statusMsg) => {
+          setSpeechStatus(statusMsg);
+        },
         onInterim: liveText => {
           setProblemText(liveText);
           setSelectedPresetId(null);

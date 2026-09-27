@@ -2,7 +2,7 @@
  * AssemblyAI Speech-to-Text Service
  * API Key: 725148352e8d4e57acc655f894894636
  *
- * Provides highly accurate multilingual transcription (Hindi, English, etc.)
+ * Provides highly accurate multilingual transcription (Hindi, English, Bengali, etc.)
  * directly from recorded microphone audio.
  */
 
@@ -11,8 +11,8 @@ export const ASSEMBLYAI_API_KEY =
   "725148352e8d4e57acc655f894894636";
 
 export async function transcribeAudioWithAssemblyAI(audioBlob, langCode = "hi") {
-  if (!audioBlob || audioBlob.size < 1000) {
-    throw new Error("Audio recording is too short for transcription.");
+  if (!audioBlob || audioBlob.size < 1200) {
+    throw new Error("Audio recording is too short. Please speak clearly for at least 1-2 seconds.");
   }
 
   // 1. Upload audio to AssemblyAI
@@ -29,14 +29,15 @@ export async function transcribeAudioWithAssemblyAI(audioBlob, langCode = "hi") 
     throw new Error(`AssemblyAI upload failed (${uploadRes.status}): ${errText}`);
   }
 
-  const { upload_url } = await uploadRes.json();
-  if (!upload_url) {
+  const uploadData = await uploadRes.json();
+  const uploadUrl = uploadData?.upload_url;
+  if (!uploadUrl) {
     throw new Error("AssemblyAI did not return an upload URL.");
   }
 
   // 2. Request transcription with automatic language detection and punctuation
   const transcriptPayload = {
-    audio_url,
+    audio_url: uploadUrl,
     language_detection: true,
     punctuate: true,
     format_text: true,
@@ -61,10 +62,10 @@ export async function transcribeAudioWithAssemblyAI(audioBlob, langCode = "hi") 
     throw new Error("AssemblyAI did not return a transcript ID.");
   }
 
-  // 3. Poll for completed transcription
-  const maxAttempts = 35; // ~28 seconds maximum polling
+  // 3. Poll for completed transcription (every 600ms, up to 30 attempts)
+  const maxAttempts = 35;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     const pollRes = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
       headers: {
