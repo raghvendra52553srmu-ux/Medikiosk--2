@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { AccessibilityToolbar } from "@/components/layout/AccessibilityToolbar";
+import Footer from "@/components/layout/Footer";
 import { logoutStaff } from "@/services/authService";
 import { SubscriptionPaymentModal } from "@/components/payment/SubscriptionPaymentModal";
 import { cn } from "@/utils/cn";
@@ -993,72 +994,7 @@ export default function LandingPage() {
       </main>
 
       {/* ────────────────── FOOTER ────────────────── */}
-      <footer className="border-t border-zinc-200 bg-white/95 dark:border-zinc-800 dark:bg-zinc-950/95 backdrop-blur-xl">
-        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 mb-10">
-            {/* Brand */}
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 font-display text-base font-bold text-white dark:bg-emerald-500 dark:text-zinc-950">M</span>
-                <span className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-50">MediKiosk</span>
-              </div>
-              <p className="text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                OPD intake & clinical documentation.<br />Smart Kiosk System for hospitals.
-              </p>
-            </div>
-
-            {/* Product */}
-            <div>
-              <p className="text-sm font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-4">Product</p>
-              <ul className="space-y-2.5">
-                {[
-                  { label: "Home", action: () => scrollTo("home") },
-                  { label: "Patient Flow", action: () => scrollTo("how-it-works") },
-                  { label: "Doctor Workflow", action: () => scrollTo("doctor-workflow") },
-                  { label: "Features", action: () => scrollTo("features") },
-                  { label: "Pricing (Demo)", action: () => scrollTo("pricing") },
-                  { label: "Roles", action: () => scrollTo("roles") },
-                ].map(item => (
-                  <li key={item.label}>
-                    <button type="button" onClick={item.action} className="text-base font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors cursor-pointer">
-                      {item.label}
-                    </button>
-                  </li>
-))}
-              </ul>
-            </div>
-
-            {/* Access */}
-            <div>
-              <p className="text-sm font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-4">Access</p>
-              <ul className="space-y-2.5">
-                {[
-                  { label: "Patient Login", action: handlePatientStart },
-                  { label: "Patient Sign Up", action: handlePatientStart },
-                ].map(item => (
-                  <li key={item.label}>
-                    <button type="button" onClick={item.action} className="text-base font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors cursor-pointer">
-                      {item.label}
-                    </button>
-                  </li>
-))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Footer bottom */}
-          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <p className="text-base font-bold text-zinc-900 dark:text-zinc-50">MediKiosk — Smart OPD Kiosk System</p>
-              <p className="text-base text-zinc-500 dark:text-zinc-500">Built for streamlined OPD intake and clinical documentation.</p>
-            </div>
-            <div className="flex items-center gap-2 text-base font-medium text-zinc-500 dark:text-zinc-500">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              Patient kiosk open
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       <SubscriptionPaymentModal
         open={paymentModalOpen}
