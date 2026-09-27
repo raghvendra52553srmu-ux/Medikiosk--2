@@ -1,8 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useApp } from "@/context/AppContext";
 
 export default function Footer() {
   const navigate = useNavigate();
+  const { setRole } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -11,14 +13,27 @@ export default function Footer() {
     }
   };
 
+  const handlePatientStart = () => {
+    if (setRole) setRole("patient");
+    navigate("/patient");
+  };
+
+  const handleDoctorStart = () => {
+    navigate("/doctor/dashboard");
+  };
+
+  const handleAdminStart = () => {
+    navigate("/admin/dashboard");
+  };
+
   return (
     <footer className="w-full bg-[#1b3f8b] text-white selection:bg-orange-500 selection:text-white">
       {/* Main Footer Container */}
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-12 pt-14 pb-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
           
           {/* Column 1: Contact */}
-          <div className="space-y-5">
+          <div className="space-y-4">
             <h3 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">
               Contact
             </h3>
@@ -27,9 +42,9 @@ export default function Footer() {
               <h4 className="text-base font-bold text-white tracking-wide mb-1">
                 Address
               </h4>
-              <p className="text-sm text-blue-100/95 leading-relaxed max-w-xs">
-                MediKiosk Digital Health Solutions<br />
-                National Health Innovation Tower,<br />
+              <p className="text-sm text-blue-100/95 leading-relaxed">
+                MediKiosk Health Innovations<br />
+                9th Floor, Jeevan Bharati Tower,<br />
                 Connaught Place, New Delhi - 110 001
               </p>
             </div>
@@ -42,7 +57,7 @@ export default function Footer() {
                 href="tel:1800114477"
                 className="text-sm font-medium text-blue-100 hover:text-white transition-colors"
               >
-                1800-11-4477 (24x7 OPD Helpdesk)
+                1800-11-4477
               </a>
             </div>
 
@@ -59,7 +74,7 @@ export default function Footer() {
             </div>
 
             <div>
-              <h4 className="text-base font-bold text-white tracking-wide mb-3">
+              <h4 className="text-base font-bold text-white tracking-wide mb-2.5">
                 Social Media
               </h4>
               <div className="flex items-center gap-3">
@@ -118,45 +133,21 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column 2: Important Links (MediKiosk + ABDM) */}
-          <div className="space-y-5">
+          {/* Column 2: Important Links (Direct MediKiosk Modules) */}
+          <div className="space-y-4">
             <h3 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">
               Important Links
             </h3>
 
-            <ul className="space-y-4 text-sm sm:text-base text-blue-100">
-              <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
-                <a
-                  href="https://abdm.gov.in"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white hover:underline transition-colors leading-snug"
-                >
-                  Ayushman Bharat Digital Mission (ABDM)
-                </a>
-              </li>
-
-              <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
-                <a
-                  href="https://healthid.abdm.gov.in"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white hover:underline transition-colors leading-snug"
-                >
-                  Ayushman Bharat Health Account (ABHA)
-                </a>
-              </li>
-
+            <ul className="space-y-3.5 text-sm sm:text-base text-blue-100">
               <li className="flex items-start gap-2.5">
                 <span className="text-white mt-1 text-sm font-bold">•</span>
                 <button
                   type="button"
-                  onClick={() => navigate("/patient")}
+                  onClick={handlePatientStart}
                   className="text-left hover:text-white hover:underline transition-colors leading-snug cursor-pointer"
                 >
-                  Smart OPD Registration & Intake
+                  Smart OPD Intake & Voice Triage
                 </button>
               </li>
 
@@ -164,10 +155,32 @@ export default function Footer() {
                 <span className="text-white mt-1 text-sm font-bold">•</span>
                 <button
                   type="button"
-                  onClick={() => navigate("/doctor")}
+                  onClick={handlePatientStart}
                   className="text-left hover:text-white hover:underline transition-colors leading-snug cursor-pointer"
                 >
-                  Healthcare Professionals & Doctor Desk
+                  Live OPD Queue & Token Tracking
+                </button>
+              </li>
+
+              <li className="flex items-start gap-2.5">
+                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <button
+                  type="button"
+                  onClick={handleDoctorStart}
+                  className="text-left hover:text-white hover:underline transition-colors leading-snug cursor-pointer"
+                >
+                  Doctor Consultation & EHR Desk
+                </button>
+              </li>
+
+              <li className="flex items-start gap-2.5">
+                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <button
+                  type="button"
+                  onClick={handleAdminStart}
+                  className="text-left hover:text-white hover:underline transition-colors leading-snug cursor-pointer"
+                >
+                  Hospital Admin & Department Analytics
                 </button>
               </li>
 
@@ -184,13 +197,13 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: Policies */}
-          <div className="space-y-5">
+          {/* Column 3: Policies (MediKiosk Healthcare Compliance) */}
+          <div className="space-y-4">
             <h3 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">
               Policies
             </h3>
 
-            <ul className="space-y-4 text-sm sm:text-base text-blue-100">
+            <ul className="space-y-3.5 text-sm sm:text-base text-blue-100">
               <li className="flex items-start gap-2.5">
                 <span className="text-white mt-1 text-sm font-bold">•</span>
                 <a
@@ -204,30 +217,30 @@ export default function Footer() {
               <li className="flex items-start gap-2.5">
                 <span className="text-white mt-1 text-sm font-bold">•</span>
                 <a
-                  href="#website-policies"
-                  className="hover:text-white hover:underline transition-colors leading-snug"
-                >
-                  Hospital & Kiosk Policies
-                </a>
-              </li>
-
-              <li className="flex items-start gap-2.5">
-                <span className="text-white mt-1 text-sm font-bold">•</span>
-                <a
                   href="#privacy"
                   className="hover:text-white hover:underline transition-colors leading-snug"
                 >
-                  Data Privacy & HIPAA Policy
+                  Patient Data Privacy & Consent Policy
                 </a>
               </li>
 
               <li className="flex items-start gap-2.5">
                 <span className="text-white mt-1 text-sm font-bold">•</span>
                 <a
-                  href="#health-data-management"
+                  href="#queue-policy"
                   className="hover:text-white hover:underline transition-colors leading-snug"
                 >
-                  Health Data Management Policy (DISHA)
+                  OPD Queue & Token Allocation Policy
+                </a>
+              </li>
+
+              <li className="flex items-start gap-2.5">
+                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <a
+                  href="#security"
+                  className="hover:text-white hover:underline transition-colors leading-snug"
+                >
+                  Hospital Security & Data Encryption
                 </a>
               </li>
             </ul>
@@ -245,7 +258,7 @@ export default function Footer() {
             </p>
 
             {/* QR Card + Instructions */}
-            <div className="flex items-center gap-4 pt-2">
+            <div className="flex items-center gap-4 pt-1">
               {/* QR Code Container with MediKiosk Center Badge */}
               <div className="relative shrink-0 rounded-2xl bg-white p-2.5 shadow-xl">
                 <svg
@@ -344,7 +357,7 @@ export default function Footer() {
         {/* Bottom copyright / compliance strip */}
         <div className="mt-14 pt-8 border-t border-blue-700/60 flex flex-col md:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-blue-200/80">
           <p className="text-center md:text-left">
-            © {new Date().getFullYear()} MediKiosk · Smart OPD Intake & Ayushman Bharat Digital Mission (ABDM) Partner.
+            © {new Date().getFullYear()} MediKiosk · Smart OPD Intake & Hospital Management System.
           </p>
           <p className="text-center md:text-right text-blue-300">
             HL7/FHIR Standardized · DISHA & ISO 27001 Compliant · All Rights Reserved.
