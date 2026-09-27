@@ -1,6 +1,16 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Footer() {
+  const navigate = useNavigate();
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <footer className="w-full bg-[#1b3f8b] text-white selection:bg-orange-500 selection:text-white">
       {/* Main Footer Container */}
@@ -18,8 +28,8 @@ export default function Footer() {
                 Address
               </h4>
               <p className="text-sm text-blue-100/95 leading-relaxed max-w-xs">
-                National Health Authority 9th Floor,<br />
-                Tower-1, Jeevan Bharati Building,<br />
+                MediKiosk Digital Health Solutions<br />
+                National Health Innovation Tower,<br />
                 Connaught Place, New Delhi - 110 001
               </p>
             </div>
@@ -32,7 +42,7 @@ export default function Footer() {
                 href="tel:1800114477"
                 className="text-sm font-medium text-blue-100 hover:text-white transition-colors"
               >
-                1800-11-4477
+                1800-11-4477 (24x7 OPD Helpdesk)
               </a>
             </div>
 
@@ -41,10 +51,10 @@ export default function Footer() {
                 Email
               </h4>
               <a
-                href="mailto:abdm@nha.gov.in"
+                href="mailto:support@medikiosk.in"
                 className="text-sm font-medium text-blue-100 hover:text-white transition-colors"
               >
-                abdm[at]nha[dot]gov[dot]in
+                support[at]medikiosk[dot]in
               </a>
             </div>
 
@@ -108,7 +118,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column 2: Important Links */}
+          {/* Column 2: Important Links (MediKiosk + ABDM) */}
           <div className="space-y-5">
             <h3 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">
               Important Links
@@ -123,7 +133,7 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="hover:text-white hover:underline transition-colors leading-snug"
                 >
-                  Ayushman Bharat Digital Mission
+                  Ayushman Bharat Digital Mission (ABDM)
                 </a>
               </li>
 
@@ -135,32 +145,41 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="hover:text-white hover:underline transition-colors leading-snug"
                 >
-                  Ayushman Bharat Health Account(ABHA)
+                  Ayushman Bharat Health Account (ABHA)
                 </a>
               </li>
 
               <li className="flex items-start gap-2.5">
                 <span className="text-white mt-1 text-sm font-bold">•</span>
-                <a
-                  href="https://hpr.abdm.gov.in"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white hover:underline transition-colors leading-snug"
+                <button
+                  type="button"
+                  onClick={() => navigate("/patient")}
+                  className="text-left hover:text-white hover:underline transition-colors leading-snug cursor-pointer"
                 >
-                  Healthcare Professionals Registry
-                </a>
+                  Smart OPD Registration & Intake
+                </button>
               </li>
 
               <li className="flex items-start gap-2.5">
                 <span className="text-white mt-1 text-sm font-bold">•</span>
-                <a
-                  href="https://grievance.abdm.gov.in"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white hover:underline transition-colors leading-snug"
+                <button
+                  type="button"
+                  onClick={() => navigate("/doctor")}
+                  className="text-left hover:text-white hover:underline transition-colors leading-snug cursor-pointer"
                 >
-                  Grievance Portal
-                </a>
+                  Healthcare Professionals & Doctor Desk
+                </button>
+              </li>
+
+              <li className="flex items-start gap-2.5">
+                <span className="text-white mt-1 text-sm font-bold">•</span>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("pricing")}
+                  className="text-left hover:text-white hover:underline transition-colors leading-snug cursor-pointer"
+                >
+                  Hospital Subscriptions & Kiosk Setup
+                </button>
               </li>
             </ul>
           </div>
@@ -188,7 +207,7 @@ export default function Footer() {
                   href="#website-policies"
                   className="hover:text-white hover:underline transition-colors leading-snug"
                 >
-                  Website Policies
+                  Hospital & Kiosk Policies
                 </a>
               </li>
 
@@ -198,7 +217,7 @@ export default function Footer() {
                   href="#privacy"
                   className="hover:text-white hover:underline transition-colors leading-snug"
                 >
-                  Data Privacy Policy
+                  Data Privacy & HIPAA Policy
                 </a>
               </li>
 
@@ -208,26 +227,26 @@ export default function Footer() {
                   href="#health-data-management"
                   className="hover:text-white hover:underline transition-colors leading-snug"
                 >
-                  Health Data Management Policy
+                  Health Data Management Policy (DISHA)
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Aarogya Setu App */}
+          {/* Column 4: MediKiosk App */}
           <div className="space-y-4">
             <h3 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">
-              Aarogya Setu App
+              MediKiosk App
             </h3>
 
             <p className="text-sm sm:text-base text-blue-100/90 leading-snug">
-              Download the Aarogya Setu app{" "}
-              <span className="italic font-light">(Bharat ka health partner)</span>
+              Download the MediKiosk app{" "}
+              <span className="italic font-light">(Bharat ka smart OPD partner)</span>
             </p>
 
             {/* QR Card + Instructions */}
             <div className="flex items-center gap-4 pt-2">
-              {/* QR Code Container */}
+              {/* QR Code Container with MediKiosk Center Badge */}
               <div className="relative shrink-0 rounded-2xl bg-white p-2.5 shadow-xl">
                 <svg
                   className="h-28 w-28 text-slate-900"
@@ -251,26 +270,24 @@ export default function Footer() {
                     fill="#111827"
                   />
 
-                  {/* Central Aarogya Setu Heart Badge */}
-                  <circle cx="60" cy="60" r="16" fill="white" />
-                  {/* Saffron side of heart */}
-                  <path
-                    d="M60 67 C55 64 50 59 50 54 C50 50 53 47 57 47 C58.5 47 60 48 60 49.5 Z"
-                    fill="#F58220"
-                  />
-                  {/* Green side of heart with tick */}
-                  <path
-                    d="M60 67 C65 64 70 59 70 54 C70 50 67 47 63 47 C61.5 47 60 48 60 49.5 Z"
-                    fill="#388E3C"
-                  />
-                  {/* White tick on green */}
-                  <path
-                    d="M57 55 L59 57.5 L64 51.5"
-                    stroke="white"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                  {/* Central MediKiosk Emblem Badge */}
+                  <circle cx="60" cy="60" r="17" fill="white" />
+                  <circle cx="60" cy="60" r="14" fill="#059669" />
+                  {/* Medical Cross + M letter */}
+                  <rect x="57" y="50" width="6" height="20" rx="2" fill="white" />
+                  <rect x="50" y="57" width="20" height="6" rx="2" fill="white" />
+                  <circle cx="60" cy="60" r="4.5" fill="#1b3f8b" />
+                  <text
+                    x="60"
+                    y="63.5"
+                    fill="white"
+                    fontSize="7"
+                    fontWeight="bold"
+                    textAnchor="middle"
+                    fontFamily="system-ui, sans-serif"
+                  >
+                    M
+                  </text>
                 </svg>
               </div>
 
@@ -287,7 +304,7 @@ export default function Footer() {
             <div className="flex flex-wrap items-center gap-3 pt-2">
               {/* Google Play */}
               <a
-                href="https://play.google.com/store/apps/details?id=nic.goi.aarogyasetu"
+                href="https://play.google.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2.5 rounded-xl bg-[#112a61] hover:bg-[#0c1f4a] border border-blue-400/25 px-3.5 py-2 transition-all shadow-md active:scale-95"
@@ -306,7 +323,7 @@ export default function Footer() {
 
               {/* App Store */}
               <a
-                href="https://apps.apple.com/in/app/aarogya-setu/id1505825357"
+                href="https://apps.apple.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2.5 rounded-xl bg-[#112a61] hover:bg-[#0c1f4a] border border-blue-400/25 px-3.5 py-2 transition-all shadow-md active:scale-95"
@@ -327,10 +344,10 @@ export default function Footer() {
         {/* Bottom copyright / compliance strip */}
         <div className="mt-14 pt-8 border-t border-blue-700/60 flex flex-col md:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-blue-200/80">
           <p className="text-center md:text-left">
-            © {new Date().getFullYear()} MediKiosk · National Health Authority (NHA) & Ayushman Bharat Digital Mission (ABDM) Partner.
+            © {new Date().getFullYear()} MediKiosk · Smart OPD Intake & Ayushman Bharat Digital Mission (ABDM) Partner.
           </p>
           <p className="text-center md:text-right text-blue-300">
-            Government of India Health Portal Compliant · All Rights Reserved.
+            HL7/FHIR Standardized · DISHA & ISO 27001 Compliant · All Rights Reserved.
           </p>
         </div>
       </div>
