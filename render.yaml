@@ -22,4 +22,4 @@ services:
       - key: COOKIE_SECURE
         value: "true"
       - key: CORS_ORIGIN
-        value: "https://medikiosk-2.vercel.app,http://localhost:5173"
+        value: "https://medikiosk-2.vercel.app,http://localhost:5173,https://*.onrender.com"
