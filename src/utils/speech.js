@@ -1,11 +1,9 @@
 /**
- * Speech Recognition powered by AssemblyAI & WebSpeech
+ * Speech Recognition powered by WebSpeech & AssemblyAI
  * API Key: 725148352e8d4e57acc655f894894636
  *
- * Dual-engine voice recognition:
- * 1. Live real-time speech preview via browser engine (instant feedback)
- * 2. High-accuracy multilingual AI transcription via AssemblyAI ("jise jo bole vahi uthaye")
- * 3. Resilient fallback so speech is NEVER lost.
+ * Provides instant live speech-to-text dictation while speaking ("bolne pe turant likhna")
+ * with seamless fallback to AssemblyAI for browsers without native WebSpeech support.
  */
 
 import { transcribeAudioWithAssemblyAI } from "@/services/assemblyAiService";
@@ -16,10 +14,9 @@ function getCtor() {
 }
 
 export function speechSupported() {
-  if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-    return true;
-  }
-  return getCtor() !== null;
+  if (getCtor() !== null) return true;
+  if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) return true;
+  return false;
 }
 
 /** Map language code to BCP-47 tags for speech engines. */
@@ -37,26 +34,131 @@ export function speechLang(code) {
 
 /**
  * Start listening.
- * Captures microphone audio using MediaRecorder for AssemblyAI transcription
- * while simultaneously showing live interim text.
+ * Uses native WebSpeech for instant real-time live typing as the user speaks.
+ * If WebSpeech is unavailable or fails, seamlessly uses MediaRecorder + AssemblyAI.
  */
 export function startListening(opts = {}) {
+  const Ctor = getCtor();
+
+  // Mode 1: Native browser WebSpeech (Instant live typing on Chrome, Edge, Android)
+  if (Ctor) {
+    let rec = null;
+    let settled = false;
+    let userStopped = false;
+    let latestTranscript = "";
+
+    try {
+      rec = new Ctor();
+      rec.lang = speechLang(opts.lang || "hi");
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+    } catch (e) {
+      rec = null;
+    }
+
+    if (rec) {
+      const done = new Promise((resolve) => {
+        const finish = (result) => {
+          if (settled) return;
+          settled = true;
+          resolve(result);
+        };
+
+        rec.onstart = () => {
+          opts.onStart?.();
+        };
+
+        rec.onresult = (ev) => {
+          let finalTranscript = "";
+          let interimTranscript = "";
+
+          for (let i = 0; i < ev.results.length; ++i) {
+            const item = ev.results[i][0];
+            if (ev.results[i].isFinal) {
+              finalTranscript += item.transcript;
+            } else {
+              interimTranscript += item.transcript;
+            }
+          }
+
+          const current = (finalTranscript + (interimTranscript ? " " + interimTranscript : "")).trim();
+          if (current) {
+            latestTranscript = current;
+            opts.onInterim?.(current);
+          }
+        };
+
+        rec.onerror = (ev) => {
+          const code = ev.error;
+          if (code === "aborted" || code === "no-speech") {
+            return;
+          }
+          if (code === "not-allowed" || code === "service-not-allowed") {
+            finish({
+              ok: false,
+              reason: "denied",
+              message: "Microphone access was blocked. Please allow mic permissions in your browser.",
+            });
+            return;
+          }
+          if (code === "network") {
+            finish({
+              ok: false,
+              reason: "network",
+              message: "Speech recognition network error. Please check your internet connection.",
+            });
+            return;
+          }
+          console.warn("[speech] WebSpeech error:", code);
+        };
+
+        rec.onend = () => {
+          const text = latestTranscript.trim();
+          if (text) {
+            finish({ ok: true, transcript: text, engine: "webspeech" });
+          } else if (!settled) {
+            finish({
+              ok: false,
+              reason: userStopped ? "aborted" : "no-speech",
+              message: "We didn't catch any speech. Try speaking again, or type your answer.",
+            });
+          }
+        };
+
+        try {
+          rec.start();
+        } catch (startErr) {
+          console.warn("[speech] rec.start error, falling back to AssemblyAI:", startErr);
+          // If start fails, resolve false to trigger fallback
+          finish({ ok: false, reason: "start-failed" });
+        }
+      });
+
+      const session = {
+        stop: () => {
+          try {
+            rec.stop();
+          } catch {}
+        },
+        cancel: () => {
+          userStopped = true;
+          try {
+            rec.abort();
+          } catch {}
+        },
+      };
+
+      return { session, done };
+    }
+  }
+
+  // Mode 2: MediaRecorder + AssemblyAI (For Firefox, Safari, or where WebSpeech is absent)
   let userStopped = false;
   let settled = false;
-  let browserFinalText = "";
   let mediaStream = null;
   let mediaRecorder = null;
   const audioChunks = [];
-
-  const Ctor = getCtor();
-  const rec = Ctor ? new Ctor() : null;
-
-  if (rec) {
-    rec.lang = speechLang(opts.lang);
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.maxAlternatives = 1;
-  }
 
   const done = new Promise(async (resolve) => {
     const finish = (r) => {
@@ -70,154 +172,96 @@ export function startListening(opts = {}) {
       resolve(r);
     };
 
-    // 1. Request microphone access for AssemblyAI recording
     try {
-      if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
+      if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+        finish({
+          ok: false,
+          reason: "unsupported",
+          message: "Microphone is not supported in this browser. Please type your answer.",
+        });
+        return;
+      }
+
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : MediaRecorder.isTypeSupported("audio/mp4")
+        ? "audio/mp4"
+        : "";
+
+      mediaRecorder = mimeType
+        ? new MediaRecorder(mediaStream, { mimeType })
+        : new MediaRecorder(mediaStream);
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunks.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        if (userStopped) {
+          finish({ ok: false, reason: "aborted", message: "Listening was cancelled." });
+          return;
+        }
+
+        const audioBlob = new Blob(audioChunks, {
+          type: mediaRecorder?.mimeType || "audio/webm",
         });
 
-        // Pick best supported MIME type
-        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : MediaRecorder.isTypeSupported("audio/webm")
-          ? "audio/webm"
-          : MediaRecorder.isTypeSupported("audio/mp4")
-          ? "audio/mp4"
-          : "";
-
-        mediaRecorder = mimeType
-          ? new MediaRecorder(mediaStream, { mimeType })
-          : new MediaRecorder(mediaStream);
-
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) {
-            audioChunks.push(e.data);
-          }
-        };
-
-        mediaRecorder.start(250); // Collect slices every 250ms
-      }
-    } catch (micErr) {
-      console.warn("[speech] MediaRecorder init error, falling back to WebSpeech:", micErr);
-    }
-
-    opts.onStart?.();
-
-    // 2. Set up browser live interim text display (if supported)
-    if (rec) {
-      rec.onresult = (ev) => {
-        let interim = "";
-        for (let i = ev.resultIndex; i < ev.results.length; i++) {
-          const piece = ev.results[i][0].transcript;
-          if (ev.results[i].isFinal) {
-            browserFinalText = (browserFinalText ? browserFinalText + " " : "") + piece.trim();
-          } else {
-            interim = (interim ? interim + " " : "") + piece.trim();
-          }
+        if (!audioBlob || audioBlob.size < 1200) {
+          finish({
+            ok: false,
+            reason: "no-speech",
+            message: "We didn't catch enough speech. Please speak clearly into the mic.",
+          });
+          return;
         }
-        const live = (browserFinalText + (interim ? " " + interim : "")).trim();
-        if (live) opts.onInterim?.(live);
-      };
 
-      rec.onerror = (ev) => {
-        const code = ev.error;
-        if (code === "aborted" || code === "no-speech") return;
-        console.warn("[speech] WebSpeech event error:", code);
-      };
-
-      rec.onend = () => {
-        // Auto-stop media recorder if speech pauses
-        if (mediaRecorder && mediaRecorder.state === "recording") {
-          try {
-            mediaRecorder.requestData();
-            mediaRecorder.stop();
-          } catch {}
-        }
-      };
-
-      try {
-        rec.start();
-      } catch (err) {
-        console.warn("[speech] WebSpeech start error:", err);
-      }
-    }
-
-    // 3. Transcription processor when recording finishes
-    const processAudioAndFinish = async () => {
-      let audioBlob = null;
-      if (audioChunks.length > 0) {
-        const type = mediaRecorder?.mimeType || "audio/webm";
-        audioBlob = new Blob(audioChunks, { type });
-      }
-
-      // Try AssemblyAI first if audio was recorded
-      if (audioBlob && audioBlob.size > 1000 && !userStopped) {
         try {
-          opts.onStatus?.("⏳ Transcribing audio with AssemblyAI...");
-          const assemblyText = await transcribeAudioWithAssemblyAI(
-            audioBlob,
-            opts.lang || "hi"
-          );
-
-          if (assemblyText && assemblyText.trim()) {
-            const cleanText = assemblyText.trim();
-            opts.onInterim?.(cleanText);
-            finish({
-              ok: true,
-              transcript: cleanText,
-              engine: "assemblyai",
-            });
+          opts.onStatus?.("⏳ AI is transcribing your voice with AssemblyAI...");
+          const text = await transcribeAudioWithAssemblyAI(audioBlob, opts.lang || "hi");
+          if (text && text.trim()) {
+            const clean = text.trim();
+            opts.onInterim?.(clean);
+            finish({ ok: true, transcript: clean, engine: "assemblyai" });
             return;
           }
         } catch (assemblyErr) {
-          console.warn(
-            "[speech] AssemblyAI transcription error, falling back to browser text:",
-            assemblyErr
-          );
+          console.warn("[speech] AssemblyAI error:", assemblyErr);
         }
-      }
 
-      // Fallback to browser transcribed text if AssemblyAI was skipped or failed
-      const text = (browserFinalText || "").trim();
-      if (text) {
-        finish({ ok: true, transcript: text, engine: "webspeech" });
-      } else if (!settled) {
         finish({
           ok: false,
-          reason: userStopped ? "aborted" : "no-speech",
-          message: "We didn't catch any speech. Try again, or type your answer.",
+          reason: "error",
+          message: "Could not transcribe audio. Please try again or type your answer.",
         });
-      }
-    };
+      };
 
-    // Handle recorder stop
-    if (mediaRecorder) {
-      mediaRecorder.onstop = () => {
-        void processAudioAndFinish();
-      };
-    } else if (rec) {
-      rec.onend = () => {
-        void processAudioAndFinish();
-      };
-    } else {
+      mediaRecorder.start(250);
+      opts.onStart?.();
+      opts.onStatus?.("🎙️ Recording... Speak your symptoms clearly.");
+    } catch (micErr) {
+      console.warn("[speech] MediaRecorder error:", micErr);
       finish({
         ok: false,
-        reason: "unsupported",
-        message: "Microphone is not supported in this browser. Please type your answer.",
+        reason: "denied",
+        message: "Microphone access was denied. Please allow microphone permissions.",
       });
     }
   });
 
   const session = {
     stop: () => {
-      try {
-        if (rec) rec.stop();
-      } catch {}
       try {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
           try {
@@ -229,9 +273,6 @@ export function startListening(opts = {}) {
     },
     cancel: () => {
       userStopped = true;
-      try {
-        if (rec) rec.abort();
-      } catch {}
       try {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
           mediaRecorder.stop();
