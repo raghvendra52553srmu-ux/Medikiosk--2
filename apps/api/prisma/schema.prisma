@@ -92,6 +92,8 @@ model StaffUser {
 
   auditLogs        AuditLog[]
   verifiedSummaries ClinicalSummary[] @relation("VerifiedBy")
+  subscriptions    Subscription[]
+  subscriptionStatus String? @default("FREE")
 
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())
@@ -123,6 +125,8 @@ model Hospital {
   doctors     Doctor[]
   tokens      QueueToken[]
   kiosks      KioskDevice[]
+  subscriptions Subscription[]
+  subscriptionTier String? @default("DEMO")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -376,4 +380,42 @@ model KioskDevice {
   createdAt DateTime @default(now())
 
   @@index([status])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+enum PaymentGateway {
+  UPI
+  RAZORPAY
+  CARD
+}
+
+model Subscription {
+  id             String         @id @default(cuid())
+  userId         String?
+  user           StaffUser?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  hospitalId     String?
+  hospital       Hospital?      @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
+  plan           String
+  amount         Float
+  currency       String         @default("INR")
+  paymentGateway PaymentGateway
+  transactionId  String?        @unique
+  paymentStatus  PaymentStatus  @default(PENDING)
+  startDate      DateTime       @default(now())
+  expiryDate     DateTime
+  isActive       Boolean        @default(false)
+  meta           Json?
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([hospitalId])
+  @@index([paymentStatus])
 }

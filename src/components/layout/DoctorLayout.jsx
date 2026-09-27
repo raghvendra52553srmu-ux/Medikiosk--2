@@ -1,11 +1,12 @@
 import { useState, } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { LayoutDashboard, Users, Settings, LogOut, Menu, X, ChevronDown, MapPin, ClipboardCheck, FileText } from "lucide-react";
+import { LayoutDashboard, Users, Settings, LogOut, Menu, X, ChevronDown, MapPin, ClipboardCheck, FileText, Home } from "lucide-react";
 import { readFacilitySession } from "@/services/hospitalService";
 import { logoutStaff } from "@/services/authService";
 
 const NAV = [
+  { to: "/", label: "Home", icon: Home },
   { to: "/doctor/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/doctor/queue?tab=patients", label: "Patients", icon: ClipboardCheck },
   { to: "/doctor/queue", label: "Queue", icon: Users },
@@ -122,6 +123,15 @@ export function DoctorLayout({ children }) {
           <div className="flex-1" />
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/")}
+              className="flex h-9 items-center gap-1.5 rounded-[10px] border border-line bg-white/60 dark:bg-white/[0.06] px-3 text-sm font-medium text-ink/75 dark:text-zinc-300 backdrop-blur transition-all hover:bg-white hover:text-ink dark:hover:bg-white/10 dark:hover:text-white cursor-pointer"
+              aria-label="Home"
+              title="Go to Home"
+            >
+              <Home className="h-4 w-4" />
+              <span className="hidden sm:inline">Home</span>
+            </button>
             <AccessibilityToolbar />
             <button className="group flex items-center gap-2.5 rounded-[10px] border border-zinc-200 bg-white/55 dark:border-zinc-700 dark:bg-white/[0.06] py-1.5 pl-1.5 pr-2.5 transition-all duration-[320ms] [transition-timing-function:var(--ease-glide)] hover:border-zinc-300 hover:bg-white/85 dark:hover:border-zinc-600 dark:hover:bg-white/10">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white dark:bg-white dark:text-zinc-950">SP</span>

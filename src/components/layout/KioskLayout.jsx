@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, LifeBuoy } from "lucide-react";
+import { ArrowLeft, LifeBuoy, Home } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { HelpPanel, SessionWatch } from "@/components/kiosk/KioskSupport";
@@ -99,6 +99,15 @@ export function KioskLayout({
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {aside}
+            <button
+              onClick={() => navigate("/")}
+              className="flex h-10 items-center gap-1.5 rounded-[10px] border border-line bg-white/60 dark:bg-white/[0.06] px-3 text-base font-medium text-ink/75 dark:text-zinc-300 backdrop-blur transition-all duration-[320ms] [transition-timing-function:var(--ease-glide)] hover:border-white hover:bg-white hover:text-ink dark:hover:bg-white/10 dark:hover:text-white cursor-pointer"
+              aria-label="Home"
+              title="Go to Home"
+            >
+              <Home className="h-4 w-4" />
+              <span className="hidden sm:inline">Home</span>
+            </button>
             <button
               onClick={() => setHelpOpen(true)}
               className="flex h-10 items-center gap-1.5 rounded-[10px] border border-line bg-white/60 dark:bg-white/[0.06] px-3 text-base font-medium text-ink/75 dark:text-zinc-300 backdrop-blur transition-all duration-[320ms] [transition-timing-function:var(--ease-glide)] hover:border-white hover:bg-white hover:text-ink dark:hover:bg-white/10 dark:hover:text-white"

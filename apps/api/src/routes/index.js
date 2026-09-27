@@ -8,11 +8,13 @@ import catalogRoutes from "./catalog.routes.js";
 import queueRoutes from "./queue.routes.js";
 import chartRoutes from "./chart.routes.js";
 import adminRoutes from "./admin.routes.js";
+import paymentRoutes from "./payment.routes.js";
 
 const router = Router();
 
 router.use("/auth", authRoutes);
 router.use("/sessions", sessionRoutes);
+router.use("/payments", paymentRoutes);
 router.use("/", catalogRoutes);
 router.use("/", queueRoutes);
 router.use("/charts", chartRoutes);

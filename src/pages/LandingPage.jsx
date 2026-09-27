@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { AccessibilityToolbar } from "@/components/layout/AccessibilityToolbar";
 import { logoutStaff } from "@/services/authService";
+import { SubscriptionPaymentModal } from "@/components/payment/SubscriptionPaymentModal";
 import { cn } from "@/utils/cn";
 import {
   AlertCircle,
@@ -164,6 +165,13 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const { setRole, t } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
+  const handleSelectPlan = (plan) => {
+    setSelectedPlan(plan);
+    setPaymentModalOpen(true);
+  };
 
   const handlePatientStart = () => { setRole("patient"); navigate("/patient/problem"); };
   const handleDoctorLogin = () => navigate("/doctor/dashboard");
@@ -779,7 +787,13 @@ export default function LandingPage() {
                   </ul>
                 </div>
                 <div className="mt-8">
-                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed / Demo Pricing</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPlan({ id: "starter", name: "Starter Plan", price: 1499, priceDisplay: "₹1,499" })}
+                    className="w-full rounded-xl border-2 border-emerald-600 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800 hover:bg-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-300 transition-all cursor-pointer shadow-xs"
+                  >
+                    Choose Starter Plan
+                  </button>
                 </div>
               </div>
 
@@ -810,7 +824,13 @@ export default function LandingPage() {
                   </ul>
                 </div>
                 <div className="mt-8">
-                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed / Demo Pricing</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPlan({ id: "hospital", name: "Hospital Plan", price: 4999, priceDisplay: "₹4,999" })}
+                    className="w-full rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400 transition-all shadow-md cursor-pointer"
+                  >
+                    Choose Hospital Plan
+                  </button>
                 </div>
               </div>
 
@@ -837,7 +857,13 @@ export default function LandingPage() {
                   </ul>
                 </div>
                 <div className="mt-8">
-                  <span className="block text-center text-xs font-medium text-zinc-400">Proposed / Demo Pricing</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPlan({ id: "enterprise", name: "Enterprise Plan", price: 14999, priceDisplay: "₹14,999" })}
+                    className="w-full rounded-xl border border-zinc-300 bg-zinc-50 px-4 py-2.5 text-sm font-bold text-zinc-800 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 transition-all cursor-pointer"
+                  >
+                    Choose Enterprise Plan
+                  </button>
                 </div>
               </div>
             </div>
@@ -1033,6 +1059,15 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <SubscriptionPaymentModal
+        open={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        plan={selectedPlan}
+        onSuccess={(data) => {
+          console.log("Subscription successfully activated:", data);
+        }}
+      />
     </div>
-);
+  );
 }

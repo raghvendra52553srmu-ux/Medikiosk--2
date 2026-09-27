@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
-import { ArrowUpRight, Stethoscope, User, Building2, Lock, Landmark, HeartHandshake, Mic, Ticket, Sparkles, CheckCircle2 } from "lucide-react";
+import { ArrowUpRight, Stethoscope, User, Building2, Lock, Landmark, HeartHandshake, Mic, Ticket, Sparkles, CheckCircle2, Home } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { AccessibilityToolbar } from "@/components/layout/AccessibilityToolbar";
 
@@ -90,7 +90,7 @@ export default function RoleSelect() {
 
         <div className="mx-auto flex h-[60px] max-w-[1400px] items-center justify-between gap-3 px-4 sm:px-6">
           {/* Logo / Brand Name */}
-          <div className="flex items-center gap-2.5">
+          <button type="button" onClick={() => navigate("/")} className="flex items-center gap-2.5 text-left cursor-pointer" aria-label="Go to Home">
             <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-emerald-600 font-display text-base font-bold text-white shadow-sm dark:bg-emerald-500 dark:text-zinc-950">
               M
             </span>
@@ -102,10 +102,18 @@ export default function RoleSelect() {
                 {t("role.headerSubtitle")}
               </span>
             </div>
-          </div>
+          </button>
 
           {/* Role Navigation Links in Top Navbar (High Contrast Selected State) */}
           <nav className="flex items-center gap-1 sm:gap-1.5 rounded-[12px] border border-zinc-300/80 bg-zinc-100/90 p-1 dark:border-zinc-700 dark:bg-zinc-900/90">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="flex items-center gap-1.5 rounded-[9px] px-3 py-1.5 text-sm sm:text-base font-bold text-zinc-800 hover:bg-zinc-200/80 hover:text-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-white transition-all cursor-pointer shadow-xs whitespace-nowrap"
+            >
+              <Home className="h-3.5 w-3.5 shrink-0" />
+              <span>Home</span>
+            </button>
             {NAV_ROLES.map(r => (
               <button
                 key={r.role}

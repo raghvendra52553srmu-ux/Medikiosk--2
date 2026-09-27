@@ -18,6 +18,8 @@ const schema = z.object({
     .string()
     .default("false")
     .transform((v) => v === "true"),
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
 });
 
 const parsed = schema.safeParse(process.env);

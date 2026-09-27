@@ -29,8 +29,10 @@ import {
   ShieldCheck,
   LayoutDashboard,
   CreditCard,
+  Home,
 } from "lucide-react";
 import { AccessibilityToolbar } from "@/components/layout/AccessibilityToolbar";
+import { SubscriptionPaymentModal } from "@/components/payment/SubscriptionPaymentModal";
 
 const TABS = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -47,6 +49,8 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("dashboard");
   const [auditPage, setAuditPage] = useState(1);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [adminPlan, setAdminPlan] = useState({ id: "hospital", name: "Hospital Plan", price: 4999, priceDisplay: "₹4,999" });
 
   const overview = useQuery({
     queryKey: qk.adminOverview(),
@@ -99,6 +103,9 @@ export default function AdminDashboard() {
             </Badge>
           </div>
           <div className="flex items-center gap-2">
+            <Button size="md" variant="secondary" onClick={() => navigate("/")} icon={<Home className="h-3.5 w-3.5" />}>
+              Home
+            </Button>
             <AccessibilityToolbar />
             <Button size="md" variant="tertiary" onClick={handleLogout} icon={<LogOut className="h-3.5 w-3.5" />}>
               Logout
@@ -621,7 +628,12 @@ export default function AdminDashboard() {
                   <CreditCard className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                   MediKiosk B2B Subscription & Plan
                 </h2>
-                <Badge tone="solid">Active</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge tone="solid">Active</Badge>
+                  <Button size="sm" variant="secondary" onClick={() => setPaymentOpen(true)}>
+                    Upgrade / Change Plan
+                  </Button>
+                </div>
               </div>
               <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                 Low-cost OPD deployment model for clinics and hospital facilities.
@@ -717,8 +729,17 @@ export default function AdminDashboard() {
           </section>
         )}
       </main>
+
+      <SubscriptionPaymentModal
+        open={paymentOpen}
+        onClose={() => setPaymentOpen(false)}
+        plan={adminPlan}
+        onSuccess={(data) => {
+          void overview.refetch();
+        }}
+      />
     </div>
-);
+  );
 }
 
 function Stat({
