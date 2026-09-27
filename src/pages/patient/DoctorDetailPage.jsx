@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { getFacility } from "@/services/hospitalService";
 import { getDoctorById } from "@/services/doctorService";
-import { hasActiveSession, issueToken } from "@/services/patientService";
+import { hasActiveSession, issueToken, readClinic } from "@/services/patientService";
 import { errorMessage } from "@/services/apiClient";
 import { qk } from "@/lib/queryClient";
 import { ArrowRight, Check, Clock, MapPin, Users } from "lucide-react";
@@ -19,7 +19,13 @@ export default function DoctorDetailPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const hospital = useMemo(() => getFacility(params.get("h") ?? undefined), [params]);
+  const clinic = readClinic();
+  const hospital = useMemo(() => {
+    const fromParam = getFacility(params.get("h") ?? undefined);
+    if (fromParam) return fromParam;
+    if (clinic.hospitalId) return { id: clinic.hospitalId, name: clinic.hospitalName };
+    return { id: "demo-hosp-1", name: "District General Hospital", address: "Civil Lines, Gonda" };
+  }, [params, clinic.hospitalId, clinic.hospitalName]);
   const [issuing, setIssuing] = useState(false);
   const [done, setDone] = useState(false);
 

@@ -84,11 +84,14 @@ export default function ReviewPage() {
     try {
       let activeToken = token;
       const c = readClinic();
-      if (!activeToken && c.hospitalId && c.doctorId) {
-        activeToken = await issueToken(
-          { id: c.hospitalId, name: c.hospitalName },
-          { id: c.doctorId, name: c.doctorName, department: c.department }
-        );
+      if (!activeToken) {
+        const hospital = c.hospitalId
+          ? { id: c.hospitalId, name: c.hospitalName || "District General Hospital" }
+          : { id: "demo-hosp-1", name: "District General Hospital" };
+        const doctor = c.doctorId
+          ? { id: c.doctorId, name: c.doctorName || "Dr. Sunita Patil", department: c.department || "General Medicine" }
+          : { id: "cmtqo6pyh000aqt703x5u16ay", name: "Dr. Sunita Patil", department: "General Medicine" };
+        activeToken = await issueToken(hospital, doctor);
         setToken(activeToken);
       }
       await submitToDoctor().catch(() => {});

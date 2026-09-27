@@ -84,7 +84,20 @@ export default function RelatedDoctorsPage() {
       }
 
       if (activeHospitals.length === 0) {
-        return [];
+        activeHospitals = [
+          {
+            id: "demo-hosp-1",
+            osmType: "node",
+            osmId: 1,
+            name: "District General Hospital",
+            lat: 27.1339,
+            lon: 81.9615,
+            distanceKm: 0.8,
+            address: "Civil Lines, Gonda, Uttar Pradesh",
+            emergency: true,
+            specialities: ["General Medicine", "Cardiology", "Orthopedics", "Pediatrics", "ENT", "Dermatology"],
+          },
+        ];
       }
 
       // Sort facilities by proximity and query their doctors
