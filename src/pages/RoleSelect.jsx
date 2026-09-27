@@ -105,14 +105,14 @@ export default function RoleSelect() {
           </button>
 
           {/* Role Navigation Links in Top Navbar (High Contrast Selected State) */}
-          <nav className="flex items-center gap-1 sm:gap-1.5 rounded-[12px] border border-zinc-300/80 bg-zinc-100/90 p-1 dark:border-zinc-700 dark:bg-zinc-900/90">
+          <nav className="flex items-center gap-1 sm:gap-1.5 rounded-[12px] border border-zinc-300/80 bg-zinc-100/90 p-1 dark:border-zinc-700 dark:bg-zinc-900/90 overflow-x-auto no-scrollbar">
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="flex items-center gap-1.5 rounded-[9px] px-3 py-1.5 text-sm sm:text-base font-bold text-zinc-800 hover:bg-zinc-200/80 hover:text-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-white transition-all cursor-pointer shadow-xs whitespace-nowrap"
+              className="flex items-center gap-1.5 rounded-[9px] px-2 sm:px-3 py-1.5 text-xs sm:text-base font-bold text-zinc-800 hover:bg-zinc-200/80 hover:text-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-white transition-all cursor-pointer shadow-xs whitespace-nowrap"
             >
               <Home className="h-3.5 w-3.5 shrink-0" />
-              <span>Home</span>
+              <span className="hidden xs:inline">Home</span>
             </button>
             {NAV_ROLES.map(r => (
               <button
@@ -122,7 +122,7 @@ export default function RoleSelect() {
                   navigate(r.path);
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-[9px] px-3 py-1.5 text-sm sm:text-base font-bold transition-all duration-150 active:scale-95 shadow-xs cursor-pointer whitespace-nowrap",
+                  "flex items-center gap-1.5 rounded-[9px] px-2 sm:px-3 py-1.5 text-xs sm:text-base font-bold transition-all duration-150 active:scale-95 shadow-xs cursor-pointer whitespace-nowrap",
                   r.role === "patient"
                     ? "bg-emerald-600 text-white dark:bg-emerald-500 dark:text-zinc-950 ring-2 ring-emerald-500/40"
                     : "text-zinc-800 hover:bg-zinc-200/80 hover:text-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-white"
@@ -130,7 +130,7 @@ export default function RoleSelect() {
               >
                 <r.icon className="h-3.5 w-3.5 shrink-0" />
                 <span className="capitalize">{t(r.titleKey)}</span>
-                {r.locked && <Lock className="h-3 w-3 opacity-70" />}
+                {r.locked && <Lock className="h-3 w-3 opacity-70 hidden sm:inline" />}
               </button>
             ))}
           </nav>
@@ -148,7 +148,7 @@ export default function RoleSelect() {
               <p className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold leading-snug tracking-[-0.01em] text-zinc-900 dark:text-zinc-50">
                 {t("guide.welcome")}
               </p>
-              <p className="mt-1 text-base sm:text-base font-semibold text-emerald-900 dark:text-emerald-300">
+              <p className="mt-1 text-sm sm:text-base font-semibold text-emerald-900 dark:text-emerald-300">
                 {t("guide.welcomeSub")}
               </p>
             </div>
@@ -173,7 +173,7 @@ export default function RoleSelect() {
             </div>
 
             <h1
-              className="reveal mt-3 font-display text-5xl font-bold leading-[1.1] tracking-[-0.03em] text-zinc-900 sm:text-6xl dark:text-zinc-50 text-left"
+              className="reveal mt-3 font-display text-3xl sm:text-5xl md:text-6xl font-bold leading-[1.15] tracking-[-0.03em] text-zinc-900 dark:text-zinc-50 text-left"
               style={{ ["--i" ]: 1 }}
             >
               {t("role.heroTitle")}{" "}

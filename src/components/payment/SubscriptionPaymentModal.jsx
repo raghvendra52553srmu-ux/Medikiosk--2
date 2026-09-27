@@ -243,7 +243,7 @@ export function SubscriptionPaymentModal({
         aria-modal="true"
         aria-label="Subscription Checkout"
         className={cn(
-          "relative z-10 w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-5 sm:p-7 shadow-2xl transition-all",
+          "relative z-10 w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-5 sm:p-7 shadow-2xl transition-all max-h-[92vh] overflow-y-auto",
           "dark:border-zinc-800 dark:bg-zinc-900"
         )}
       >

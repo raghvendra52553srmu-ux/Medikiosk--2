@@ -149,7 +149,7 @@ export function KioskLayout({
       <main className={cn("flex-1 px-4 pb-10 pt-6 sm:px-6", stickyFooter && "pb-28")}>
         <div className="mx-auto max-w-[1400px]">
           {title && (
-            <h1 className="reveal font-display text-3xl md:text-4xl font-semibold leading-[1.15] tracking-[-0.03em] text-ink sm:text-5xl">
+            <h1 className="reveal font-display text-2xl sm:text-4xl md:text-5xl font-semibold leading-[1.15] tracking-[-0.03em] text-ink">
               {title}
             </h1>
 )}
@@ -168,8 +168,8 @@ export function KioskLayout({
       </main>
 
       {stickyFooter && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/60 backdrop-blur-2xl saturate-150">
-          <div className="mx-auto max-w-[1400px] px-4 py-3.5 sm:px-6">{stickyFooter}</div>
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/85 dark:bg-zinc-950/90 backdrop-blur-2xl pb-safe">
+          <div className="mx-auto max-w-[1400px] px-4 py-3 sm:py-3.5 sm:px-6">{stickyFooter}</div>
         </div>
 )}
     </div>

@@ -302,19 +302,19 @@ export default function LandingPage() {
                 {link.label}
               </button>
 ))}
-            <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-3 gap-2">
-              <button type="button" onClick={handlePatientStart} className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-semibold text-zinc-800 border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 cursor-pointer">
-                <User className="h-4 w-4 shrink-0" /> Patient
+            <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button type="button" onClick={handlePatientStart} className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-800 border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 cursor-pointer shadow-xs active:scale-95 transition-transform">
+                <User className="h-4 w-4 shrink-0" /> Patient Login
               </button>
-              <button type="button" onClick={handleDoctorLogin} className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-semibold text-zinc-800 border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 cursor-pointer">
-                <Stethoscope className="h-4 w-4 shrink-0" /> Doctor
+              <button type="button" onClick={handleDoctorLogin} className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-800 border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 cursor-pointer shadow-xs active:scale-95 transition-transform">
+                <Stethoscope className="h-4 w-4 shrink-0" /> Doctor Login
               </button>
-              <button type="button" onClick={handleAdminLogin} className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-semibold text-zinc-800 border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 cursor-pointer">
-                <Building2 className="h-4 w-4 shrink-0" /> Admin
+              <button type="button" onClick={handleAdminLogin} className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-800 border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 cursor-pointer shadow-xs active:scale-95 transition-transform">
+                <Building2 className="h-4 w-4 shrink-0" /> Hospital Admin
               </button>
             </div>
           </div>
-)}
+        )}
       </header>
 
       {/* ────────────────── MAIN CONTENT ────────────────── */}
@@ -322,7 +322,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
 
           {/* ── HERO ─────────────────────────────────────────── */}
-          <section id="home" className="py-20 lg:py-28 scroll-mt-16">
+          <section id="home" className="py-14 sm:py-20 lg:py-28 scroll-mt-16">
             {/* Eyebrow row */}
             <div className="flex flex-wrap items-center gap-2 mb-6 reveal">
               <span className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
@@ -336,24 +336,24 @@ export default function LandingPage() {
 
             {/* Headline */}
             <h1 className="reveal font-display font-bold leading-tight tracking-tight text-zinc-900 dark:text-zinc-50
-              text-5xl sm:text-6xl lg:text-7xl xl:text-7xl
+              text-3xl sm:text-5xl md:text-6xl lg:text-7xl
               max-w-4xl"
-              style={{ "--i": 1 } }
+              style={{ "--i": 1 }}
             >
               {t("role.heroTitle")}
               <span className="block text-zinc-400 dark:text-zinc-500">{t("role.heroSubtitle")}</span>
             </h1>
 
             {/* Subheading */}
-            <p className="reveal mt-6 text-xl sm:text-2xl leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-2xl"
-              style={{ "--i": 2 } }
+            <p className="reveal mt-6 text-lg sm:text-2xl leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-2xl"
+              style={{ "--i": 2 }}
             >
               {t("role.heroDescription")}
             </p>
 
             {/* Flow pills */}
             <div className="reveal mt-8 flex flex-wrap items-center gap-1.5 sm:gap-2"
-              style={{ "--i": 3 } }
+              style={{ "--i": 3 }}
             >
               {[
                 "Language",
@@ -368,22 +368,22 @@ export default function LandingPage() {
                 "Consultation",
               ].map((step, i, arr) => (
                 <span key={step} className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-zinc-800 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
+                  <span className="rounded-lg border border-zinc-200 bg-white px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-zinc-800 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
                     {step}
                   </span>
                   {i < arr.length - 1 && <ArrowRight className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-600 shrink-0" />}
                 </span>
-))}
+              ))}
             </div>
 
             {/* CTA buttons */}
-            <div className="reveal mt-10 flex flex-wrap gap-4"
-              style={{ "--i": 4 } }
+            <div className="reveal mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4"
+              style={{ "--i": 4 }}
             >
               <button
                 type="button"
                 onClick={handlePatientStart}
-                className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-emerald-600 px-8 py-4 text-lg font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-500 active:scale-95 transition-all duration-150 cursor-pointer dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-xl bg-emerald-600 px-6 sm:px-8 py-3.5 sm:py-4 text-base sm:text-lg font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-500 active:scale-95 transition-all duration-150 cursor-pointer dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400"
               >
                 <Mic className="h-5 w-5" />
                 {t("guide.startBtn")}
@@ -391,7 +391,7 @@ export default function LandingPage() {
               <button
                 type="button"
                 onClick={() => scrollTo("how-it-works")}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-8 py-4 text-lg font-bold text-zinc-800 hover:bg-zinc-50 hover:border-zinc-300 active:scale-95 transition-all duration-150 cursor-pointer dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-6 sm:px-8 py-3.5 sm:py-4 text-base sm:text-lg font-bold text-zinc-800 hover:bg-zinc-50 hover:border-zinc-300 active:scale-95 transition-all duration-150 cursor-pointer dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 shadow-sm"
               >
                 {t("guide.heading")}
                 <ChevronDown className="h-4 w-4" />

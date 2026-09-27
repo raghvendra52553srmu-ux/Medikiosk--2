@@ -29,7 +29,7 @@ export default function Footer() {
   return (
     <footer className="w-full bg-[#1b3f8b] text-white selection:bg-orange-500 selection:text-white">
       {/* Main Footer Container */}
-      <div className="mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-12 pt-14 pb-10">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-8 lg:px-12 pt-12 sm:pt-14 pb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
           
           {/* Column 1: Contact */}
@@ -258,11 +258,11 @@ export default function Footer() {
             </p>
 
             {/* QR Card + Instructions */}
-            <div className="flex items-center gap-4 pt-1">
+            <div className="flex items-center gap-3.5 pt-1">
               {/* QR Code Container with MediKiosk Center Badge */}
-              <div className="relative shrink-0 rounded-2xl bg-white p-2.5 shadow-xl">
+              <div className="relative shrink-0 rounded-2xl bg-white p-2 sm:p-2.5 shadow-xl">
                 <svg
-                  className="h-28 w-28 text-slate-900"
+                  className="h-24 w-24 sm:h-28 sm:w-28 text-slate-900"
                   viewBox="0 0 120 120"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -305,7 +305,7 @@ export default function Footer() {
               </div>
 
               {/* Instructions + Orange Accent */}
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <p className="text-sm font-medium text-white leading-tight">
                   Scan with your phone camera to install.
                 </p>
@@ -314,23 +314,23 @@ export default function Footer() {
             </div>
 
             {/* Store Badges */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2">
               {/* Google Play */}
               <a
                 href="https://play.google.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 rounded-xl bg-[#112a61] hover:bg-[#0c1f4a] border border-blue-400/25 px-3.5 py-2 transition-all shadow-md active:scale-95"
+                className="flex items-center gap-2 rounded-xl bg-[#112a61] hover:bg-[#0c1f4a] border border-blue-400/25 px-3 py-2 transition-all shadow-md active:scale-95"
               >
-                <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none">
+                <svg className="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" fill="none">
                   <path d="M3.609 1.813A1.5 1.5 0 0 0 3 3.109v17.782a1.5 1.5 0 0 0 .609 1.296l10.222-10.187z" fill="#00C1A6"/>
                   <path d="M17.433 15.602l-3.602-3.602-10.222 10.187c.465.253 1.051.222 1.527-.08z" fill="#FF3A44"/>
                   <path d="M17.433 8.398L5.136 1.897C4.66 1.595 4.074 1.564 3.609 1.817z" fill="#00E676"/>
                   <path d="M21.218 10.518l-3.785-2.12-3.602 3.602 3.602 3.602 3.785-2.12c1.042-.584 1.042-2.38 0-2.964z" fill="#FFD000"/>
                 </svg>
                 <div className="text-left">
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-blue-200 leading-none">GET IT ON</p>
-                  <p className="text-sm font-semibold text-white leading-tight">Google Play</p>
+                  <p className="text-[9px] uppercase font-bold tracking-wider text-blue-200 leading-none">GET IT ON</p>
+                  <p className="text-xs sm:text-sm font-semibold text-white leading-tight">Google Play</p>
                 </div>
               </a>
 
@@ -339,14 +339,14 @@ export default function Footer() {
                 href="https://apps.apple.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 rounded-xl bg-[#112a61] hover:bg-[#0c1f4a] border border-blue-400/25 px-3.5 py-2 transition-all shadow-md active:scale-95"
+                className="flex items-center gap-2 rounded-xl bg-[#112a61] hover:bg-[#0c1f4a] border border-blue-400/25 px-3 py-2 transition-all shadow-md active:scale-95"
               >
-                <svg className="h-5 w-5 shrink-0 fill-current text-white" viewBox="0 0 24 24">
+                <svg className="h-4.5 w-4.5 shrink-0 fill-current text-white" viewBox="0 0 24 24">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 0.92-2.87-.93.04-2.02.63-2.65 1.37-.56.64-1.04 1.71-.92 2.74 1.05.08 2.06-.52 2.65-1.24z" />
                 </svg>
                 <div className="text-left">
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-blue-200 leading-none">Download on the</p>
-                  <p className="text-sm font-semibold text-white leading-tight">App Store</p>
+                  <p className="text-[9px] uppercase font-bold tracking-wider text-blue-200 leading-none">Download on the</p>
+                  <p className="text-xs sm:text-sm font-semibold text-white leading-tight">App Store</p>
                 </div>
               </a>
             </div>
