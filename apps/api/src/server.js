@@ -33,6 +33,19 @@ async function start() {
 
   // Connect database in background without blocking server port or crashing on cold-start
   void connectWithRetry();
+
+  // Self-ping keepalive: prevent Render free tier from sleeping after 15 min inactivity
+  if (env.isProd) {
+    const keepAliveUrl = process.env.RENDER_EXTERNAL_URL || "https://medikiosk-2.onrender.com";
+    setInterval(async () => {
+      try {
+        const res = await fetch(`${keepAliveUrl}/health`);
+        console.log(`[keepalive] Heartbeat ping to ${keepAliveUrl}/health -> ${res.status}`);
+      } catch (err) {
+        console.warn(`[keepalive] Ping failed: ${err?.message || err}`);
+      }
+    }, 10 * 60 * 1000).unref();
+  }
 }
 
 /** Finish in-flight requests before dying so a deploy never truncates a write. */

@@ -1,0 +1,23 @@
+name: Keep MediKiosk Render Service Awake 24/7
+
+on:
+  schedule:
+    # Run every 10 minutes (Render free tier sleeps after 15 minutes of inactivity)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping MediKiosk Live Health Endpoint
+        run: |
+          echo "Sending keep-alive ping to MediKiosk Render Service..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://medikiosk-2.onrender.com/health)
+          echo "Render Health HTTP Status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "Success: MediKiosk is active and will not sleep!"
+          else
+            echo "Warning: Health endpoint returned $STATUS, pinging home page as fallback..."
+            curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://medikiosk-2.onrender.com/
+          fi
