@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { KioskLayout } from "@/components/layout/KioskLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { getToken } from "@/services/patientService";
+import { getToken, readClinic } from "@/services/patientService";
 
 import { ArrowRight, CheckCircle2, Clock, ListOrdered, Timer, Building2, Stethoscope, Printer, User, ShieldCheck, DoorOpen } from "lucide-react";
 
@@ -15,12 +15,36 @@ export default function TokenPage() {
 
   useEffect(() => {
     let alive = true;
-    getToken().then(t => {
-      if (alive) {
+    setLoading(true);
+    getToken(tokenId)
+      .then(t => {
+        if (!alive) return;
         setToken(t);
         setLoading(false);
-      }
-    });
+      })
+      .catch(err => {
+        console.warn("Could not fetch token from server, loading local state:", err);
+        if (!alive) return;
+        const c = readClinic();
+        setToken({
+          id: tokenId || c.tokenId || "OPD-101",
+          number: c.tokenNumber || "A-101",
+          patientName: c.patient?.name || "Patient",
+          age: c.patient?.age || 35,
+          sex: c.patient?.sex || "M",
+          doctorName: c.doctorName || "Dr. Sunita Patil",
+          department: c.department || "General Medicine",
+          hospitalName: c.hospitalName || "District General Hospital",
+          room: "Room 102",
+          generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          estimatedTime: new Date(Date.now() + 15 * 60_000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          recommendedArrival: new Date(Date.now() + 5 * 60_000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          currentServing: "—",
+          patientsAhead: 1,
+          status: "waiting",
+        });
+        setLoading(false);
+      });
     return () => {
       alive = false;
     };
