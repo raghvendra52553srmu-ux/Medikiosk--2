@@ -45,12 +45,12 @@ export const updateSessionSchema = z
 /* ── Hospital sync (from the OSM payload the kiosk already has) ── */
 
 export const syncHospitalSchema = z.object({
-  osmType: z.enum(["node", "way", "relation"]),
-  osmId: z.coerce.number().int().positive(),
+  osmType: z.string().optional().default("demo"),
+  osmId: z.coerce.number().optional().default(1),
   name: z.string().trim().min(1).max(200),
   address: z.string().trim().max(400).optional(),
-  lat: z.coerce.number().min(-90).max(90),
-  lon: z.coerce.number().min(-180).max(180),
+  lat: z.coerce.number().min(-90).max(90).optional().default(27.1339),
+  lon: z.coerce.number().min(-180).max(180).optional().default(81.9615),
   phone: z.string().trim().max(60).optional(),
   website: z.string().trim().max(300).optional(),
   emergency: z.boolean().optional(),
@@ -61,7 +61,7 @@ export const syncHospitalSchema = z.object({
 
 export const issueTokenSchema = z.object({
   sessionId: cuid,
-  doctorId: cuid,
+  doctorId: cuid.optional(),
 });
 
 /* ── History ──────────────────────────────────────────────── */

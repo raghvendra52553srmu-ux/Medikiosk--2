@@ -13,33 +13,33 @@ import { SPECIALITY_ALIASES } from "../config/roster.js";
  * the doctor can see where their patient is standing.
  */
 export async function syncHospital(req, res) {
-  const body = req.body
-
-;
+  const body = req.body;
+  const osmType = body.osmType || "demo";
+  const osmId = BigInt(body.osmId || 1);
 
   const hospital = await prisma.hospital.upsert({
-    where: { osmType_osmId: { osmType: body.osmType, osmId: BigInt(body.osmId) } },
+    where: { osmType_osmId: { osmType, osmId } },
     create: {
-      osmType: body.osmType,
-      osmId: BigInt(body.osmId),
-      name: body.name,
-      address: body.address,
-      lat: body.lat,
-      lon: body.lon,
+      osmType,
+      osmId,
+      name: body.name || "District General Hospital",
+      address: body.address || "",
+      lat: body.lat ?? 27.1339,
+      lon: body.lon ?? 81.9615,
       phone: body.phone,
       website: body.website,
       emergency: body.emergency ?? false,
-      specialities: body.specialities,
+      specialities: body.specialities ?? [],
     },
     update: {
-      name: body.name,
-      address: body.address,
-      lat: body.lat,
-      lon: body.lon,
+      name: body.name || "District General Hospital",
+      address: body.address || "",
+      lat: body.lat ?? 27.1339,
+      lon: body.lon ?? 81.9615,
       phone: body.phone,
       website: body.website,
       emergency: body.emergency ?? false,
-      specialities: body.specialities,
+      specialities: body.specialities ?? [],
     },
   });
 

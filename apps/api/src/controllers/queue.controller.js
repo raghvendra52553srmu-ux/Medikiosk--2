@@ -38,7 +38,7 @@ export async function createToken(req, res) {
   const { sessionId, doctorId } = req.body;
   const { token, reused } = await issueToken({ sessionId, doctorId });
 
-  if (!reused) emitTokenIssued(doctorId, { tokenId: token.id, number: token.number });
+  if (!reused) emitTokenIssued(token.doctorId, { tokenId: token.id, number: token.number });
 
   const { nowServing, patientsAhead, etaAt } = await getTokenPosition(token.id);
   const full = await prisma.queueToken.findUniqueOrThrow({

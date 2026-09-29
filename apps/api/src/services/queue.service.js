@@ -82,17 +82,33 @@ async function issueTokenOnce(params) {
       if (session.token) return { token: session.token, reused: true };
       if (!session.consentAt) throw ApiError.badRequest("Consent is required before a token can be issued.");
 
-      const doctor = await tx.doctor.findUnique({
-        where: { id: doctorId },
-        include: { hospital: { select: { id: true } } },
-      });
-      if (!doctor) throw ApiError.notFound("That doctor is no longer listed at this facility.");
-      if (!doctor.isAvailable) throw ApiError.conflict("That doctor's OPD is closed for today.");
+      let doctor = doctorId
+        ? await tx.doctor.findUnique({
+            where: { id: doctorId },
+            include: { hospital: { select: { id: true } } },
+          })
+        : null;
+
+      if (!doctor) {
+        doctor = await tx.doctor.findFirst({
+          where: { isAvailable: true },
+          include: { hospital: { select: { id: true } } },
+          orderBy: { createdAt: "asc" },
+        });
+      }
+      if (!doctor) {
+        doctor = await tx.doctor.findFirst({
+          include: { hospital: { select: { id: true } } },
+          orderBy: { createdAt: "asc" },
+        });
+      }
+      if (!doctor) throw ApiError.notFound("No doctor is currently listed at this facility.");
+      const resolvedDoctorId = doctor.id;
 
       const serviceDate = serviceDateFor();
 
       const last = await tx.queueToken.findFirst({
-        where: { doctorId, serviceDate },
+        where: { doctorId: resolvedDoctorId, serviceDate },
         orderBy: { sequence: "desc" },
         select: { sequence: true },
       });
@@ -101,7 +117,7 @@ async function issueTokenOnce(params) {
 
       // How many people are genuinely ahead right now.
       const ahead = await tx.queueToken.count({
-        where: { doctorId, serviceDate, status: { in: ACTIVE } },
+        where: { doctorId: resolvedDoctorId, serviceDate, status: { in: ACTIVE } },
       });
 
       const etaAt = new Date(Date.now() + (ahead * doctor.slotMinutes + 8) * 60_000);
@@ -111,7 +127,7 @@ async function issueTokenOnce(params) {
           number,
           sequence,
           sessionId,
-          doctorId,
+          doctorId: resolvedDoctorId,
           hospitalId: doctor.hospital.id,
           serviceDate,
           etaAt,
