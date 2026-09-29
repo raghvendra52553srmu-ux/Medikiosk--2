@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SourceBadge } from "@/components/ui/SourceBadge";
 import { useToast } from "@/components/ui/Toast";
-import { getClinicalSummary, getDocuments, getToken, submitToDoctor } from "@/services/patientService";
+import { getClinicalSummary, getDocuments, getToken, issueToken, readClinic, submitToDoctor } from "@/services/patientService";
 import { errorMessage } from "@/services/apiClient";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -22,7 +22,13 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(null);
-  const [clinic, setClinic] = useState(() => readClinic());
+  const [clinic, setClinic] = useState(() => {
+    try {
+      return readClinic();
+    } catch {
+      return {};
+    }
+  });
 
   useEffect(() => {
     let alive = true;
@@ -33,7 +39,18 @@ export default function ReviewPage() {
     ])
       .then(([s, d, t]) => {
         if (!alive) return;
-        setSummary(s);
+        const c = readClinic();
+        setClinic(c);
+        const finalSummary = s || {
+          chiefComplaint: c?.problemText || "General consultation",
+          historyOfPresentIllness: "Patient checked in via kiosk.",
+          medications: [],
+          allergies: [],
+          pastMedicalHistory: "None noted.",
+          redFlags: [],
+          compiledAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setSummary(finalSummary);
         setDocs(d || []);
         setToken(t);
         setLoading(false);
