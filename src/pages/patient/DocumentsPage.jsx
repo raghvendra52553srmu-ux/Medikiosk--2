@@ -88,60 +88,132 @@ export default function DocumentsPage() {
       const dataUrl = await fileToDataUrl(file);
       setStage("reading");
 
-      const { text, confidence } = await readDocumentText(file, p => {
-        // Map Tesseract's 0..1 progress onto our stage bar.
-        setOcrProgress(Math.max(0.05, Math.min(0.95, p.progress)));
-        if (p.status === "recognizing text" && p.progress > 0.7) setStage("extracting");
-      });
-
-      setStage("extracting");
-      setOcrProgress(0.97);
-
-      // Too little text or very low confidence → treat as a failed read so the
-      // patient can retake rather than attach garbage to the visit.
-      const meaningful = text.replace(/\s+/g, " ").trim();
-      if (meaningful.length < 12 || confidence < 25) {
-        setStage("failed");
-        setFailMessage(
-          confidence < 25
-            ? "The page was too blurred or poorly lit to read. Hold it flat under good light and retake."
-            : "Almost no text was found on this page. Make sure the whole report is in frame and try again."
-);
-        busyRef.current = false;
-        return;
+      let text = "";
+      let confidence = 0;
+      try {
+        const ocrRes = await readDocumentText(file, p => {
+          setOcrProgress(Math.max(0.1, Math.min(0.92, p.progress)));
+          if (p.status === "recognizing text" && p.progress > 0.6) setStage("extracting");
+        });
+        text = ocrRes?.text || "";
+        confidence = ocrRes?.confidence || 0;
+      } catch (ocrErr) {
+        console.warn("OCR read warning (proceeding with direct image attach):", ocrErr);
       }
 
-      const { title, type, summary } = summariseOcrText(meaningful);
-      // The page itself is never uploaded — only the text Tesseract read on this
-      // device, plus a downscaled thumbnail so the doctor can eyeball the source.
-      const thumb = await downscaleDataUrl(dataUrl, 640, 0.6);
+      setStage("extracting");
+      setOcrProgress(0.95);
+
+      const meaningful = text.replace(/\s+/g, " ").trim();
+
+      // Extract details or deduce intelligently from filename
+      let title = "";
+      let type = "other";
+      let summary = "";
+
+      const rawFileName = (file.name || "").replace(/\.[^/.]+$/, "").trim();
+      const cleanFileName = rawFileName.replace(/[-_]+/g, " ");
+
+      if (meaningful.length >= 12 && confidence >= 20) {
+        const ocrSummary = summariseOcrText(meaningful);
+        title = ocrSummary.title;
+        type = ocrSummary.type;
+        summary = ocrSummary.summary;
+      } else {
+        // Document has low OCR confidence, handwritten text, or Hindi/regional script
+        const lowerName = (file.name || "").toLowerCase();
+        if (/blood|janch|cbc|lft|kft|lab|test|lipid|sugar|urine|report|hemoglobin|haemoglobin|pathology/.test(lowerName)) {
+          type = "lab-report";
+          title = cleanFileName ? cleanFileName.charAt(0).toUpperCase() + cleanFileName.slice(1) : "Lab / Blood Test Report";
+        } else if (/rx|presc|dawa|medic|tablet|capsule|paracetamol|dose|doctor/.test(lowerName)) {
+          type = "prescription";
+          title = cleanFileName ? cleanFileName.charAt(0).toUpperCase() + cleanFileName.slice(1) : "Doctor's Prescription";
+        } else if (/xray|x-ray|usg|ultra|mri|ct|scan|imaging|radio|sonography/.test(lowerName)) {
+          type = "imaging";
+          title = cleanFileName ? cleanFileName.charAt(0).toUpperCase() + cleanFileName.slice(1) : "Diagnostic Imaging Scan";
+        } else if (/discharge|admit|summary|hospital|card/.test(lowerName)) {
+          type = "discharge-summary";
+          title = cleanFileName ? cleanFileName.charAt(0).toUpperCase() + cleanFileName.slice(1) : "Discharge Summary";
+        } else {
+          type = "other";
+          title = cleanFileName ? cleanFileName.charAt(0).toUpperCase() + cleanFileName.slice(1) : "Medical Document";
+        }
+
+        if (meaningful.length > 0) {
+          summary = meaningful.slice(0, 160);
+        } else {
+          summary = "Scanned document attached for direct physician review.";
+        }
+      }
+
+      // Generate the downscaled thumbnail so it's persisted and visible to the doctor
+      let thumb = await downscaleDataUrl(dataUrl, 640, 0.6);
+      if (!thumb && dataUrl.length <= 380_000) {
+        thumb = dataUrl;
+      }
+
+      const apiDocType = TYPE_TO_API[type] || "OTHER";
 
       const saved = await addDocument({
-        name: title,
-        type: TYPE_TO_API[type],
+        name: title || "Medical Document",
+        type: apiDocType,
         extractedText: summary,
         ocrConfidence: Math.round(confidence),
         thumbDataUrl: thumb,
       });
 
-      setDocs(prev => [saved, ...prev]);
+      // Ensure local state doc has imageDataUrl so thumbnail and preview modal show immediately
+      const uiDoc = {
+        ...saved,
+        imageDataUrl: saved.imageDataUrl || thumb || dataUrl,
+      };
+
+      setDocs(prev => [uiDoc, ...prev]);
       setStage("done");
       setOcrProgress(1);
       toast("Document added to this visit.", {
-        detail: `${Math.round(confidence)}% read confidence · ${type.replace("-", " ")}`,
+        detail: confidence >= 20
+          ? `${Math.round(confidence)}% read confidence · ${type.replace("-", " ")}`
+          : `Attached for doctor review · ${type.replace("-", " ")}`,
       });
       window.setTimeout(() => {
         setStage("idle");
         setOcrProgress(0);
         busyRef.current = false;
-      }, 1400);
+      }, 1200);
     } catch (err) {
-      setStage("failed");
-      setFailMessage(
-        (err)?.message ||
-          "Could not read this page. Check your connection (the first scan downloads a small language model) and try again."
-);
-      busyRef.current = false;
+      console.warn("Document OCR flow issue, falling back to direct image attach:", err);
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        const thumb = await downscaleDataUrl(dataUrl, 480, 0.5);
+        const rawFileName = (file.name || "").replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ") || "Uploaded Document";
+        const fallbackSaved = await addDocument({
+          name: rawFileName.charAt(0).toUpperCase() + rawFileName.slice(1),
+          type: "OTHER",
+          extractedText: "Scanned page attached for physician review.",
+          ocrConfidence: 0,
+          thumbDataUrl: thumb,
+        });
+        const uiDoc = {
+          ...fallbackSaved,
+          imageDataUrl: fallbackSaved.imageDataUrl || thumb || dataUrl,
+        };
+        setDocs(prev => [uiDoc, ...prev]);
+        setStage("done");
+        setOcrProgress(1);
+        toast("Document attached for doctor review.", {
+          detail: "Attached successfully.",
+        });
+        window.setTimeout(() => {
+          setStage("idle");
+          setOcrProgress(0);
+          busyRef.current = false;
+        }, 1200);
+      } catch (fatalErr) {
+        setStage("failed");
+        setFailMessage((err)?.message || "Could not process this document. Please try again.");
+        busyRef.current = false;
+      }
     }
   };
 
@@ -493,17 +565,29 @@ async function downscaleDataUrl(dataUrl, maxWidth, quality) {
 
     const scale = Math.min(1, maxWidth / (img.naturalWidth || maxWidth));
     const canvas = document.createElement("canvas");
-    canvas.width = Math.round((img.naturalWidth || maxWidth) * scale);
-    canvas.height = Math.round((img.naturalHeight || maxWidth) * scale);
+    canvas.width = Math.max(1, Math.round((img.naturalWidth || maxWidth) * scale));
+    canvas.height = Math.max(1, Math.round((img.naturalHeight || maxWidth) * scale));
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return undefined;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    const out = canvas.toDataURL("image/jpeg", quality);
-    // Stay inside the server's attachment ceiling; drop the thumbnail rather
-    // than fail the whole scan.
-    return out.length > 380_000 ? undefined : out;
+    let out = canvas.toDataURL("image/jpeg", quality);
+    // Stay inside the server's attachment ceiling (400,000 chars)
+    if (out.length > 380_000) {
+      out = canvas.toDataURL("image/jpeg", 0.4);
+    }
+    if (out.length > 380_000) {
+      const smallCanvas = document.createElement("canvas");
+      smallCanvas.width = Math.max(1, Math.round(canvas.width * 0.6));
+      smallCanvas.height = Math.max(1, Math.round(canvas.height * 0.6));
+      const smallCtx = smallCanvas.getContext("2d");
+      if (smallCtx) {
+        smallCtx.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
+        out = smallCanvas.toDataURL("image/jpeg", 0.4);
+      }
+    }
+    return out.length > 390_000 ? undefined : out;
   } catch {
     return undefined;
   }

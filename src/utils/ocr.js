@@ -22,18 +22,29 @@ async function getWorker() {
   return workerPromise;
 }
 
-/** Read text from an image File, Blob, or data URL. */
+/** Read text from an image File, Blob, or data URL with safety timeout. */
 export async function readDocumentText(
   source,
   onProgress
 ) {
   progressHandler = onProgress ?? null;
   try {
-    const worker = await getWorker();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("OCR worker timed out")), 7000)
+    );
+    const worker = await Promise.race([getWorker(), timeoutPromise]);
     const result = await worker.recognize(source);
     return {
-      text: (result.data.text ?? "").trim(),
-      confidence: result.data.confidence ?? 0,
+      text: (result.data?.text ?? "").trim(),
+      confidence: result.data?.confidence ?? 0,
+      success: true,
+    };
+  } catch (err) {
+    console.warn("[OCR] Tesseract read failed or timed out, continuing with direct image attach:", err?.message || err);
+    return {
+      text: "",
+      confidence: 0,
+      success: false,
     };
   } finally {
     progressHandler = null;

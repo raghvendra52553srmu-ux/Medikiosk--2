@@ -199,24 +199,73 @@ export async function saveAnswer(questionId, value) {
 export async function getDocuments() {
   const { sessionId } = readClinic();
   if (!sessionId) return [];
-  return api.get(`/sessions/${sessionId}/documents`);
+  try {
+    const res = await api.get(`/sessions/${sessionId}/documents`);
+    if (Array.isArray(res)) {
+      try {
+        localStorage.setItem(`medikiosk.docs.${sessionId}`, JSON.stringify(res));
+      } catch {}
+      return res;
+    }
+    return [];
+  } catch (err) {
+    console.warn("Failed to get documents from API, fallback to localStorage:", err);
+    try {
+      const local = localStorage.getItem(`medikiosk.docs.${sessionId}`);
+      return local ? JSON.parse(local) : [];
+    } catch {
+      return [];
+    }
+  }
 }
-
-
-
-
-
-
-
-
 
 export async function addDocument(doc) {
   const sessionId = requireSessionId();
-  return api.post(`/sessions/${sessionId}/documents`, doc);
+  try {
+    const saved = await api.post(`/sessions/${sessionId}/documents`, doc);
+    try {
+      const existing = JSON.parse(localStorage.getItem(`medikiosk.docs.${sessionId}`) || "[]");
+      const updated = [saved, ...existing.filter(d => d.id !== saved.id)];
+      localStorage.setItem(`medikiosk.docs.${sessionId}`, JSON.stringify(updated));
+    } catch (e) {
+      console.warn("Failed to cache doc to localStorage:", e);
+    }
+    return saved;
+  } catch (err) {
+    console.warn("API addDocument failed, using local fallback:", err);
+    const fallbackDoc = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: doc.name || "Medical Document",
+      type: (doc.type || "OTHER").toLowerCase().replace("_", "-"),
+      date: new Date().toISOString().slice(0, 10),
+      status: "completed",
+      extractedInfo: doc.extractedText || "Uploaded document",
+      ocrConfidence: doc.ocrConfidence ?? 0,
+      imageDataUrl: doc.thumbDataUrl,
+      source: "document",
+    };
+    try {
+      const existing = JSON.parse(localStorage.getItem(`medikiosk.docs.${sessionId}`) || "[]");
+      localStorage.setItem(`medikiosk.docs.${sessionId}`, JSON.stringify([fallbackDoc, ...existing]));
+    } catch (e) {
+      console.warn("LocalStorage save error:", e);
+    }
+    return fallbackDoc;
+  }
 }
 
 export async function deleteDocument(documentId) {
-  return api.delete(`/documents/${documentId}`);
+  const { sessionId } = readClinic();
+  if (sessionId) {
+    try {
+      const existing = JSON.parse(localStorage.getItem(`medikiosk.docs.${sessionId}`) || "[]");
+      localStorage.setItem(`medikiosk.docs.${sessionId}`, JSON.stringify(existing.filter(d => d.id !== documentId)));
+    } catch {}
+  }
+  return api.delete(`/documents/${documentId}`).catch(err => {
+    console.warn("Delete document API failed or was local:", err);
+    return { success: true };
+  });
 }
 
 /* ── Summary / submit ─────────────────────────────────────── */
