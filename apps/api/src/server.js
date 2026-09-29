@@ -37,14 +37,16 @@ async function start() {
   // Self-ping keepalive: prevent Render free tier from sleeping after 15 min inactivity
   if (env.isProd) {
     const keepAliveUrl = process.env.RENDER_EXTERNAL_URL || "https://medikiosk-2.onrender.com";
-    setInterval(async () => {
+    const ping = async () => {
       try {
         const res = await fetch(`${keepAliveUrl}/health`);
         console.log(`[keepalive] Heartbeat ping to ${keepAliveUrl}/health -> ${res.status}`);
       } catch (err) {
         console.warn(`[keepalive] Ping failed: ${err?.message || err}`);
       }
-    }, 10 * 60 * 1000).unref();
+    };
+    setTimeout(ping, 30_000).unref();
+    setInterval(ping, 5 * 60 * 1000).unref();
   }
 }
 
